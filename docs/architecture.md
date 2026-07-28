@@ -7,6 +7,7 @@ Technical architecture and design documentation for the Chemical and Sample Mana
 ## Table of Contents
 
 - [Overview](#overview)
+- [Python Backend (v2.0 Migration)](#python-backend-v20-migration)
 - [System Architecture](#system-architecture)
 - [Technology Stack](#technology-stack)
 - [Application Layers](#application-layers)
@@ -26,9 +27,104 @@ Crucible: Pandora Toolbox Enhancement (v2.0) is a full-stack web application bui
 
 - **Architecture Style**: Monolithic with clear separation of concerns
 - **Communication**: RESTful API
-- **Data Storage**: JSON-based file storage (LowDB)
+- **Data Storage**: JSON-based file storage (LowDB) → **SQLite via SQLAlchemy** in the Python backend
 - **Deployment**: Containerized application (Podman/Docker)
 - **Scalability**: Vertical scaling (horizontal planned for future)
+
+> ⚠️ **Migration status:** the Node/Express backend documented in the sections
+> below is being replaced by a **Python/FastAPI backend** (`backend/`) with an
+> identical API contract (strangler-fig migration). The React client, the API
+> contract (API.md) and all diagrams of the *frontend* remain accurate for both.
+> The next section documents the Python backend; the Express sections are kept
+> until the legacy stack is retired. Deployment runbooks and the cutover plan
+> live in [MIGRATION.md](../MIGRATION.md).
+
+---
+
+## Python Backend (v2.0 Migration)
+
+**Location**: `backend/` · **Runs as**: `crucible-py` container, port 49160 (managed by `container-py.sh`)
+
+### High-Level Architecture (Python stack)
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                       Client Browser                          │
+│         React SPA (client/dist — unchanged, same /api calls)  │
+└───────────────────────────┬──────────────────────────────────┘
+                            ↕ REST /api/* + static files
+┌───────────────────────────┴──────────────────────────────────┐
+│              FastAPI application (backend/app/)               │
+│                                                               │
+│  main.py        app factory · CORS · static/SPA serving ·     │
+│                 /architecture · {"error": ...} error shape    │
+│  routers/       chemicals · samples · screening ·             │
+│                 toxicology · stats   (1 file per Express      │
+│                 route file, endpoint-for-endpoint)            │
+│  schemas.py     Pydantic v2 request models (lenient — no 422s │
+│                 that Express would not have produced)         │
+│  compat.py      JS-semantics helpers: || defaulting,          │
+│                 parseInt, toFixed(1), toISOString format      │
+│  utils/         sdf.py (RDKit structure analysis) ·           │
+│                 samples_excel.py (SLIMS 3-row header) ·       │
+│                 excel.py (xlsx/csv → formatted strings)       │
+│  store.py       lowdb-like verbs (all_docs/find/insert/…)     │
+│  models.py      SQLAlchemy 2 ORM — hybrid document pattern    │
+│  database.py    engine from DATABASE_URL · per-request        │
+│                 Session via FastAPI dependency injection      │
+└───────────────────────────┬──────────────────────────────────┘
+                            ↕ SQLAlchemy
+┌───────────────────────────┴──────────────────────────────────┐
+│  SQLite  data/crucible.db          (PostgreSQL-ready:         │
+│  tables: chemicals · samples ·      switching is a            │
+│  screening · toxicology             DATABASE_URL change)      │
+│                                                               │
+│  data/pandora.json  ──migrate_from_lowdb.py──►  (one-shot,   │
+│  (legacy lowdb file)                             idempotent)  │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### Technology Stack (Python backend)
+
+| Technology | Purpose | Where |
+|------------|---------|-------|
+| **Python 3.12** | Runtime (python:3.12-slim image) | `backend/Dockerfile` |
+| **FastAPI** | Web framework, routing, DI, OpenAPI docs at `/docs` | `backend/app/main.py`, `routers/` |
+| **uvicorn** | ASGI server (0.0.0.0:$PORT, default 49160) | `backend/app/main.py` |
+| **SQLAlchemy 2** | ORM / database access | `backend/app/models.py`, `database.py` |
+| **Pydantic v2** | Request models | `backend/app/schemas.py` |
+| **SQLite** | Storage (file: `data/crucible.db`) | `DATABASE_URL` in `config.py` |
+| **RDKit** | SDF/MOL parsing, formula/MW, S-Groups, stereo | `backend/app/utils/sdf.py` |
+| **openpyxl** | Excel reading (SLIMS + generic templates) | `backend/app/utils/excel.py` |
+| **pytest** | 45 contract-parity tests + live dual-backend diff | `backend/tests/` |
+
+### Request Flow (Python stack)
+
+```
+Browser fetch('/api/chemicals?search=x')
+   → uvicorn → FastAPI router  (routers/chemicals.py :: list_chemicals)
+   → Depends(get_db) opens a SQLAlchemy Session          (database.py)
+   → store.all_docs(db, Chemical) reads record documents (store.py)
+   → filtering/sorting/pagination in Python — identical
+     semantics to the Express implementation             (compat.py)
+   → dict returned → FastAPI serialises JSON → browser
+```
+
+### Key design decisions
+
+1. **Identical contract, quirks included** — same paths, status codes,
+   messages, and JS-isms (`|| null` coercion, `errors` key omitted when
+   empty, `percentage` as a string). Enforced by `backend/tests/`.
+2. **Hybrid document storage** — lowdb records are schemaless, so each table
+   stores the full record in a `doc` JSON column plus indexed columns
+   (`id`, business key, `created_at`, insertion-order `seq`). See
+   [database-schema.md](database-schema.md) for the SQL schema.
+3. **SDF via RDKit** — records are split textually (original `mol_block` and
+   all `> <FIELD>` items preserved verbatim); RDKit supplies the structural
+   intelligence (formula/MW from explicit atoms, polymer S-Groups, charges,
+   radicals, stereo, mixtures).
+4. **Same serving model as Express** — one process serves `/api/*`, the
+   built React client, `/architecture`, and the SPA fallback.
 
 ---
 

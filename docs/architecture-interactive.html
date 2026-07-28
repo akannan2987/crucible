@@ -118,6 +118,22 @@
 <div class="blob" style="width:520px;height:520px;background:#ec4899;top:30%;right:-150px;"></div>
 <div class="blob" style="width:420px;height:420px;background:#10b981;bottom:-100px;left:30%;"></div>
 
+<!-- Migration status banner: the interactive diagrams below show the LEGACY
+     Node/Express stack; the Python/FastAPI backend is documented separately. -->
+<div class="max-w-7xl mx-auto px-6 pt-6">
+  <div class="glass rounded-xl px-5 py-4 border border-amber-400/40" style="background:rgba(251,191,36,.08)">
+    <p class="text-sm text-amber-200">
+      ⚠️ <strong>Migration in progress:</strong> the diagrams on this page describe the
+      <strong>legacy Node.js/Express backend</strong>. The application is being migrated to a
+      <strong>Python/FastAPI backend</strong> (SQLAlchemy&nbsp;+&nbsp;SQLite, RDKit) with an identical API —
+      see <code>docs/architecture.md</code> → “Python Backend (v2.0 Migration)”,
+      <code>docs/database-schema.md</code> → “SQL Schema”, and <code>MIGRATION.md</code>
+      (runbooks &amp; cutover) in the repository. The React client and API contract shown here
+      are accurate for both backends.
+    </p>
+  </div>
+</div>
+
 <!-- HERO -->
 <header class="relative max-w-7xl mx-auto px-6 pt-14 pb-10">
   <div class="flex items-center gap-3 mb-6">

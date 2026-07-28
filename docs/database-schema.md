@@ -1,11 +1,18 @@
 # Database Schema - Crucible: Pandora Toolbox Enhancement (v2.0)
 
-Complete database schema documentation for the LowDB JSON-based storage system.
+Complete database schema documentation. Two storage engines exist during the
+Node → Python migration:
+
+- **SQL (SQLite via SQLAlchemy)** — used by the new Python backend
+  (`backend/`). Documented in [SQL Schema (Python backend)](#sql-schema-python-backend).
+- **LowDB (JSON file)** — used by the legacy Express backend; also the
+  source format for the one-shot migration. Documented in the sections below.
 
 ---
 
 ## Table of Contents
 
+- [SQL Schema (Python backend)](#sql-schema-python-backend)
 - [Overview](#overview)
 - [Schema Structure](#schema-structure)
 - [Collections](#collections)
@@ -15,9 +22,70 @@ Complete database schema documentation for the LowDB JSON-based storage system.
 
 ---
 
+## SQL Schema (Python backend)
+
+**File**: `data/crucible.db` (SQLite) · **Defined in**: `backend/app/models.py` ·
+**Created by**: `Base.metadata.create_all()` on app startup ·
+**Populated from lowdb by**: `backend/scripts/migrate_from_lowdb.py` (idempotent)
+
+### The hybrid document pattern
+
+LowDB records are schemaless — records gain/lose fields depending on how they
+were created (manual POST, Excel upload, SDF upload), and `PUT` merges
+arbitrary keys. To keep API responses byte-identical, each table stores the
+**complete record verbatim in a `doc` JSON column**, plus extracted columns
+used only for lookups and ordering:
+
+```sql
+CREATE TABLE chemicals (
+    id          VARCHAR(64)  PRIMARY KEY,   -- UUID, same as doc.id
+    chemical_id VARCHAR(255) UNIQUE,        -- business key (URL paths, uploads)
+    created_at  VARCHAR(40),                -- ISO string, newest-first sorting
+    seq         INTEGER,                    -- lowdb array insertion order
+    doc         JSON NOT NULL               -- the full record, verbatim
+);
+
+CREATE TABLE samples (
+    id          VARCHAR(64)  PRIMARY KEY,
+    sample_id   VARCHAR(255) UNIQUE,        -- SLIMS barcode
+    created_at  VARCHAR(40),
+    seq         INTEGER,
+    doc         JSON NOT NULL
+);
+
+CREATE TABLE screening (                    -- toxicology is identical
+    id          VARCHAR(64)  PRIMARY KEY,
+    chemical_id VARCHAR(255),               -- non-unique FK-by-convention
+    created_at  VARCHAR(40),
+    seq         INTEGER,
+    doc         JSON NOT NULL
+);
+```
+
+Rules (enforced by `backend/app/store.py`):
+
+- The extracted columns are **always rewritten from `doc` on every insert/
+  update** — `doc` is the single source of truth, columns are derived.
+- `seq` preserves lowdb's array order (some endpoints, e.g.
+  `/api/stats/chemicals-summary`, depend on insertion order).
+- Reads return `doc` as-is, which is why every field documented for the
+  LowDB collections below is preserved unchanged in the SQL storage.
+- Relationships remain by-convention (`chemical_ids` arrays, `chemical_id`
+  strings inside `doc`) — exactly as in LowDB, no foreign-key constraints yet.
+
+### PostgreSQL upgrade path
+
+Set `DATABASE_URL=postgresql+psycopg://user:pass@host/crucible` (and add
+`psycopg[binary]` to `backend/requirements.txt`), then run the migration
+script once against the new URL. The `doc` column maps to JSONB natively.
+Promoting hot fields into real, indexed columns is a later, incremental step
+behind the same API.
+
+---
+
 ## Overview
 
-Crucible uses **LowDB**, a lightweight JSON database built on Lodash. The entire database is stored in a single JSON file.
+The legacy Express backend uses **LowDB**, a lightweight JSON database built on Lodash. The entire database is stored in a single JSON file.
 
 ### File Location
 
@@ -25,7 +93,9 @@ Crucible uses **LowDB**, a lightweight JSON database built on Lodash. The entire
 - **Container**: `/app/server/data/pandora.json` (mounted from `./data/`)
 - **Backup**: `backups/pandora-YYYYMMDD-HHMMSS.json`
 
-> ⚠️ **Note**: The `data/` directory is excluded from git via `.gitignore` to protect real data.
+> ⚠️ **Note**: `data/pandora.json` is tracked in git; the SQLite file
+> `data/crucible.db` and the bare-metal scratch dir `server/data/` are
+> excluded via `.gitignore`.
 
 ### Database Characteristics
 
