@@ -1,4 +1,4 @@
-# API Documentation - Pandora Toolbox 2.0
+# API Documentation - Crucible: Pandora Toolbox Enhancement (v2.0)
 
 Complete REST API reference for the Chemical and Sample Management System.
 
@@ -1139,7 +1139,7 @@ Import the Postman collection for easy API testing:
 
 For API support or feature requests:
 - Email: support@example.com
-- GitHub Issues: [Create an issue](https://github.com/example/pandora-toolbox/issues)
+- GitHub Issues: [Create an issue](https://github.com/example/crucible/issues)
 
 ---
 

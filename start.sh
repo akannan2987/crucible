@@ -1,11 +1,12 @@
 #!/bin/bash
 
-# Pandora Toolbox 2.0 - Startup Script
+# Crucible: Pandora Toolbox Enhancement (v2.0) - Startup Script
 # Chemical & Sample Management System
 
 echo "╔═══════════════════════════════════════════════════════════╗"
 echo "║                                                           ║"
-echo "║   🧪 Pandora Toolbox 2.0 - Chemical & Sample Management   ║"
+echo "║   🧪 Crucible: Pandora Toolbox Enhancement (v2.0)        ║"
+echo "║      Chemical & Sample Management                         ║"
 echo "║                                                           ║"
 echo "╚═══════════════════════════════════════════════════════════╝"
 
@@ -31,7 +32,7 @@ export PORT=5942
 
 # Start the server
 echo ""
-echo "🚀 Starting Pandora Toolbox 2.0..."
+echo "🚀 Starting Crucible: Pandora Toolbox Enhancement (v2.0)..."
 echo "   Access the application at:"
 echo "   https://nr-ubp-dev-02.nihs.ch.nestle.com:5942"
 echo ""

@@ -1,5 +1,6 @@
 {
-  "name": "pandora-toolbox-client",
+  "name": "crucible-client",
+  "description": "Crucible: Pandora Toolbox Enhancement (v2.0) - React client",
   "private": true,
   "version": "2.0.0",
   "type": "module",

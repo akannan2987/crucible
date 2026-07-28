@@ -1,6 +1,6 @@
-# Contributing to Pandora Toolbox 2.0
+# Contributing to Crucible: Pandora Toolbox Enhancement (v2.0)
 
-Thank you for your interest in contributing to Pandora Toolbox! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to Crucible! This document provides guidelines and instructions for contributing.
 
 ---
 
@@ -58,11 +58,11 @@ We are committed to providing a welcoming and inspiring community for all. Pleas
 ```bash
 # Fork the repository on GitHub
 # Clone your fork
-git clone https://github.com/YOUR_USERNAME/pandora-toolbox.git
-cd pandora-toolbox
+git clone https://github.com/YOUR_USERNAME/crucible.git
+cd crucible
 
 # Add upstream remote
-git remote add upstream https://github.com/ORIGINAL_OWNER/pandora-toolbox.git
+git remote add upstream https://github.com/ORIGINAL_OWNER/crucible.git
 ```
 
 ### Install Dependencies
@@ -183,7 +183,7 @@ curl --noproxy '*' -k -s https://localhost:5942/api/stats
 # ✅ Should return JSON with chemicals/samples/screening/toxicology counts
 
 # Check container logs for errors
-podman logs --tail 20 pandora-toolbox
+podman logs --tail 20 crucible
 # ✅ Should show "HTTPS Server running" with no errors
 
 # Clean up after testing
@@ -273,7 +273,7 @@ git pull origin develop
 
 # Rebuild and restart
 ./container.sh stop
-podman rm pandora-toolbox
+podman rm crucible
 ./container.sh build
 ./container.sh start-ssl
 
@@ -808,7 +808,7 @@ See the [Uninstall & Cleanup guide](DEPLOYMENT.md#uninstall--cleanup) in the Dep
 - **Questions**: Open a GitHub Discussion
 - **Bugs**: Create an Issue with details
 - **Security**: Email security@example.com
-- **Slack**: Join #pandora-toolbox channel
+- **Slack**: Join #crucible channel
 
 ---
 
@@ -827,4 +827,4 @@ By contributing, you agree that your contributions will be licensed under the MI
 
 ---
 
-Thank you for contributing to Pandora Toolbox! 🎉
+Thank you for contributing to Crucible! 🎉

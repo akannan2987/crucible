@@ -1,8 +1,8 @@
-# Pandora Toolbox 2.0 - Container Image
+# Crucible: Pandora Toolbox Enhancement (v2.0) - Container Image
 FROM node:18-alpine
 
-LABEL maintainer="Pandora Toolbox Team"
-LABEL description="Chemical & Sample Management System"
+LABEL maintainer="Crucible Team (NIHS)"
+LABEL description="Crucible: Pandora Toolbox Enhancement (v2.0) - Chemical & Sample Management System"
 
 # Note: openssl and ca-certificates are already included in node:18-alpine
 

@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# SSL Certificate Setup Script for Pandora Toolbox
+# SSL Certificate Setup Script for Crucible
 # This script generates self-signed certificates for HTTPS
 
 CERT_DIR="$(pwd)/certs"
 DOMAIN="nr-ubp-dev-02.nihs.ch.nestle.com"
 
 echo "╔═══════════════════════════════════════════════════════════╗"
-echo "║   🔐 SSL Certificate Setup for Pandora Toolbox           ║"
+echo "║   🔐 SSL Certificate Setup for Crucible                   ║"
 echo "╚═══════════════════════════════════════════════════════════╝"
 echo ""
 

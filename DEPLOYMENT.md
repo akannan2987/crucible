@@ -1,6 +1,6 @@
-# Deployment Guide - Pandora Toolbox 2.0
+# Deployment Guide - Crucible: Pandora Toolbox Enhancement (v2.0)
 
-Comprehensive guide for deploying Pandora Toolbox in different environments.
+Comprehensive guide for deploying Crucible in different environments.
 
 ---
 
@@ -325,31 +325,31 @@ cd /gpfs/home/rdkannanab/work/Pandora_toolbox/nr-nips-forrest-gump-pandora-enhan
 
 ```bash
 # Build image
-podman build -t pandora-toolbox:latest .
+podman build -t crucible:latest .
 
 # Create and run container
 podman run -d \
-  --name pandora-toolbox \
+  --name crucible \
   -p 5942:5942 \
   -v pandora-data:/app/server/data \
   --restart unless-stopped \
-  pandora-toolbox:latest
+  crucible:latest
 
 # Check logs
-podman logs -f pandora-toolbox
+podman logs -f crucible
 ```
 
 #### Using Docker
 
 ```bash
-docker build -t pandora-toolbox:latest .
+docker build -t crucible:latest .
 
 docker run -d \
-  --name pandora-toolbox \
+  --name crucible \
   -p 5942:5942 \
   -v pandora-data:/app/server/data \
   --restart unless-stopped \
-  pandora-toolbox:latest
+  crucible:latest
 ```
 
 ### Container Script Commands
@@ -483,7 +483,7 @@ git pull origin main
 
 # Rebuild and restart with HTTPS
 ./container.sh stop
-podman rm pandora-toolbox
+podman rm crucible
 ./container.sh build
 ./container.sh start-ssl
 
@@ -515,20 +515,20 @@ sudo firewall-cmd --reload
 Create a systemd service for auto-start:
 
 ```bash
-sudo nano /etc/systemd/system/pandora-toolbox.service
+sudo nano /etc/systemd/system/crucible.service
 ```
 
 ```ini
 [Unit]
-Description=Pandora Toolbox 2.0
+Description=Crucible: Pandora Toolbox Enhancement (v2.0)
 After=network.target
 
 [Service]
 Type=simple
 User=rdkannanab
 WorkingDirectory=/gpfs/home/rdkannanab/work/Pandora_toolbox/nr-nips-forrest-gump-pandora-enhancement
-ExecStart=/usr/bin/podman start -a pandora-toolbox
-ExecStop=/usr/bin/podman stop pandora-toolbox
+ExecStart=/usr/bin/podman start -a crucible
+ExecStop=/usr/bin/podman stop crucible
 Restart=always
 
 [Install]
@@ -539,9 +539,9 @@ Enable and start:
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable pandora-toolbox
-sudo systemctl start pandora-toolbox
-sudo systemctl status pandora-toolbox
+sudo systemctl enable crucible
+sudo systemctl start crucible
+sudo systemctl status crucible
 ```
 
 ---
@@ -565,7 +565,7 @@ sudo systemctl status pandora-toolbox
 
 ```bash
 podman run -d \
-  --name pandora-toolbox \
+  --name crucible \
   -e PORT=5942 \
   -e NODE_ENV=production \
   -e USE_HTTPS=true \
@@ -574,7 +574,7 @@ podman run -d \
   -p 5942:5942 \
   -v ./certs:/app/certs:Z,ro \
   -v ./data:/app/server/data:Z \
-  pandora-toolbox:latest
+  crucible:latest
 ```
 
 **Local:**
@@ -742,7 +742,7 @@ Add:
 **Diagnosis:**
 ```bash
 # Check container logs
-podman logs pandora-toolbox 2>&1 | tail -20
+podman logs crucible 2>&1 | tail -20
 
 # Verify certificate and key match
 CERT_HASH=$(openssl x509 -noout -modulus -in certs/server.crt | openssl md5)
@@ -765,7 +765,7 @@ cp "$CERT_SOURCE/Nestle_Root_CA.cer" certs/ca.crt
 chmod 600 certs/server.key
 
 # Restart
-./container.sh stop && podman rm pandora-toolbox && ./container.sh start-ssl
+./container.sh stop && podman rm crucible && ./container.sh start-ssl
 ```
 
 ### Application Unreachable / Connection Timeout
@@ -778,7 +778,7 @@ chmod 600 certs/server.key
 ./container.sh status
 
 # Check container logs for errors
-podman logs --tail 50 pandora-toolbox
+podman logs --tail 50 crucible
 
 # Run health check
 ./monitor.sh
@@ -791,7 +791,7 @@ curl --noproxy '*' -k -s https://localhost:5942/api/stats
 ```bash
 # Full restart
 ./container.sh stop
-podman rm pandora-toolbox
+podman rm crucible
 ./container.sh start-ssl
 
 # Verify it's working
@@ -816,7 +816,7 @@ fuser -k 5942/tcp
 
 ```bash
 # Check logs for errors
-podman logs pandora-toolbox 2>&1 | tail -50
+podman logs crucible 2>&1 | tail -50
 
 # Rebuild container from scratch
 ./container.sh clean
@@ -876,13 +876,13 @@ free -h
 df -h
 
 # Container resource stats
-podman stats pandora-toolbox
+podman stats crucible
 
 # Check memory usage in app logs
-podman logs pandora-toolbox 2>&1 | grep "Memory"
+podman logs crucible 2>&1 | grep "Memory"
 
 # Restart container
-./container.sh stop && podman rm pandora-toolbox && ./container.sh start-ssl
+./container.sh stop && podman rm crucible && ./container.sh start-ssl
 ```
 
 ### Build Failures
@@ -948,7 +948,7 @@ data/           # Database with real data
 
 ## Uninstall & Cleanup
 
-Instructions for partially or completely removing Pandora Toolbox from the system.
+Instructions for partially or completely removing Crucible from the system.
 
 ### Using the Uninstall Script (Recommended)
 
@@ -979,25 +979,25 @@ cd /gpfs/home/rdkannanab/work/Pandora_toolbox/nr-nips-forrest-gump-pandora-enhan
 ./container.sh stop
 
 # Verify it's stopped
-podman ps -a --filter name=pandora-toolbox
+podman ps -a --filter name=crucible
 ```
 
 ### Step 2: Remove the Container
 
 ```bash
 # Remove the stopped container
-podman rm pandora-toolbox
+podman rm crucible
 
 # Verify removal
-podman ps -a --filter name=pandora-toolbox
+podman ps -a --filter name=crucible
 # ✅ Should show no results
 ```
 
 ### Step 3: Remove the Container Image
 
 ```bash
-# Remove the Pandora Toolbox image
-podman rmi pandora-toolbox:latest
+# Remove the Crucible image
+podman rmi crucible:latest
 
 # Verify removal
 podman images | grep pandora
@@ -1079,9 +1079,9 @@ rm -rf nr-nips-forrest-gump-pandora-enhancement
 If you set up the optional systemd service:
 
 ```bash
-sudo systemctl stop pandora-toolbox
-sudo systemctl disable pandora-toolbox
-sudo rm /etc/systemd/system/pandora-toolbox.service
+sudo systemctl stop crucible
+sudo systemctl disable crucible
+sudo rm /etc/systemd/system/crucible.service
 sudo systemctl daemon-reload
 ```
 
@@ -1091,15 +1091,15 @@ The following table lists everything that gets created during installation and w
 
 | Component | Location | Cleanup Command |
 |-----------|----------|----------------|
-| Container | `pandora-toolbox` | `podman rm pandora-toolbox` |
-| Image | `pandora-toolbox:latest` | `podman rmi pandora-toolbox:latest` |
+| Container | `crucible` | `podman rm crucible` |
+| Image | `crucible:latest` | `podman rmi crucible:latest` |
 | Data volume | `./data/` or `pandora-data` | `rm -rf data/` or `podman volume rm pandora-data` |
 | SSL certificates | `./certs/` | `rm -rf certs/` |
 | Cron job | User crontab | `crontab -l \| grep -v 'monitor.sh' \| crontab -` |
 | Monitor log | `/tmp/pandora-monitor.log` | `rm -f /tmp/pandora-monitor.log` |
 | node_modules | `./node_modules/`, `client/`, `server/` | `rm -rf node_modules/ client/node_modules/ server/node_modules/` |
 | Build output | `client/dist/` | `rm -rf client/dist/` |
-| systemd service | `/etc/systemd/system/pandora-toolbox.service` | `sudo rm` + `systemctl daemon-reload` |
+| systemd service | `/etc/systemd/system/crucible.service` | `sudo rm` + `systemctl daemon-reload` |
 | Project source | Full project directory | `rm -rf nr-nips-forrest-gump-pandora-enhancement/` |
 
 ### Partial Cleanup (Keep Source Code)
@@ -1130,10 +1130,10 @@ For high availability, deploy multiple instances:
 
 ```bash
 # Instance 1
-podman run -d --name pandora-toolbox-1 -p 5942:5942 ...
+podman run -d --name crucible-1 -p 5942:5942 ...
 
 # Instance 2
-podman run -d --name pandora-toolbox-2 -p 5944:5942 ...
+podman run -d --name crucible-2 -p 5944:5942 ...
 
 # Use load balancer (nginx) to distribute traffic
 ```
@@ -1144,18 +1144,18 @@ Increase container resources:
 
 ```bash
 podman run -d \
-  --name pandora-toolbox \
+  --name crucible \
   --cpus 4 \
   --memory 4g \
   -p 5942:5942 \
-  pandora-toolbox:latest
+  crucible:latest
 ```
 
 ---
 
 ## Environment Variables Reference
 
-Complete list of all environment variables used by Pandora Toolbox:
+Complete list of all environment variables used by Crucible:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -1198,7 +1198,7 @@ Memory: RSS=85MB, Heap=42MB
 
 For deployment issues:
 - Email: support@example.com
-- Slack: #pandora-toolbox
+- Slack: #crucible
 - Docs: [README.md](README.md) | [API.md](API.md)
 
 ---

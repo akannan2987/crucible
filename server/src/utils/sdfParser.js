@@ -1,5 +1,5 @@
 /**
- * SDF (Structure Data File) Parser — Pandora Toolbox 2.0
+ * SDF (Structure Data File) Parser — Crucible: Pandora Toolbox Enhancement (v2.0)
  *
  * Parses V2000 and V3000 molfiles embedded in SDF containers.
  *
@@ -622,7 +622,7 @@ function buildHillFormula(atomCounts) {
 // ---------------------------------------------------------------------------
 
 /**
- * Map parsed SDF data to the Pandora Toolbox chemical schema.
+ * Map parsed SDF data to the Crucible chemical schema.
  * Handles many common field name variations found in real-world SDF files
  * (PubChem, EPA CompTox, vendor catalogues, etc.)
  *

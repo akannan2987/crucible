@@ -83,7 +83,8 @@ export default function Layout() {
         <div className="flex h-16 items-center justify-between px-4 border-b">
           <div className="flex items-center">
             <BeakerIcon className="h-8 w-8 text-pandora-600" />
-            <span className="ml-2 text-xl font-bold text-gray-800">Pandora Toolbox</span>
+            {/* Rebrand: mobile sidebar shows the new Crucible name */}
+            <span className="ml-2 text-xl font-bold text-gray-800">Crucible</span>
           </div>
           <button onClick={() => setSidebarOpen(false)}>
             <XMarkIcon className="h-6 w-6 text-gray-500" />
@@ -161,9 +162,14 @@ export default function Layout() {
           {/* Logo */}
           <div className="flex h-16 items-center px-4 border-b bg-gradient-to-r from-pandora-600 to-pandora-700">
             <BeakerIcon className="h-8 w-8 text-white" />
+            {/* Rebrand: desktop sidebar logo — "Crucible" headline with the full
+                "Pandora Toolbox Enhancement" tagline underneath */}
             <div className="ml-3">
-              <span className="text-lg font-bold text-white">Pandora Toolbox</span>
-              <span className="ml-2 text-xs bg-white/20 text-white px-2 py-0.5 rounded">2.0</span>
+              <div>
+                <span className="text-lg font-bold text-white">Crucible</span>
+                <span className="ml-2 text-xs bg-white/20 text-white px-2 py-0.5 rounded">v2.0</span>
+              </div>
+              <div className="text-[11px] text-white/80 leading-tight">Pandora Toolbox Enhancement</div>
             </div>
           </div>
 

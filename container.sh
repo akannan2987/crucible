@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Pandora Toolbox 2.0 - Container Management Script
+# Crucible: Pandora Toolbox Enhancement (v2.0) - Container Management Script
 # Uses Podman to build and run the application
 
-IMAGE_NAME="pandora-toolbox"
-CONTAINER_NAME="pandora-toolbox"
+IMAGE_NAME="crucible"
+CONTAINER_NAME="crucible"
 PORT=5942
 HTTPS_PORT=5943
 DATA_DIR="$(pwd)/data"
@@ -20,7 +20,8 @@ NC='\033[0m' # No Color
 
 show_help() {
     echo "╔═══════════════════════════════════════════════════════════╗"
-    echo "║   🧪 Pandora Toolbox 2.0 - Container Management          ║"
+    echo "║   🧪 Crucible: Pandora Toolbox Enhancement (v2.0)        ║"
+    echo "║      Container Management                                 ║"
     echo "╚═══════════════════════════════════════════════════════════╝"
     echo ""
     echo "Usage: $0 [command]"
@@ -45,7 +46,7 @@ show_help() {
 }
 
 build_image() {
-    echo -e "${YELLOW}Building Pandora Toolbox container image...${NC}"
+    echo -e "${YELLOW}Building Crucible container image...${NC}"
     # --format docker is required so the Dockerfile HEALTHCHECK is honored;
     # podman's default OCI format silently ignores HEALTHCHECK.
     podman build --format docker -t ${IMAGE_NAME}:latest .

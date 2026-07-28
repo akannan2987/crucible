@@ -1,6 +1,6 @@
 /**
  * =============================================================
- * Pandora Toolbox — PubChem API Integration Demo
+ * Crucible — PubChem API Integration Demo
  * =============================================================
  * 
  * This script demonstrates how to connect Pandora's Express API
@@ -158,7 +158,7 @@ Then in server/src/index.js, add:
 
 async function main() {
   console.log('╔═══════════════════════════════════════════════════════════════╗');
-  console.log('║  🧪 Pandora Toolbox — PubChem API Integration Demo            ║');
+  console.log('║  🧪 Crucible — PubChem API Integration Demo                  ║');
   console.log('╚═══════════════════════════════════════════════════════════════╝');
 
   console.log('\n' + '═'.repeat(60));

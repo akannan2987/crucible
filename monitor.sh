@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Pandora Toolbox Health Monitor
+# Crucible Health Monitor
 # This script checks if the application is responding and restarts if needed
 
-CONTAINER_NAME="pandora-toolbox"
+CONTAINER_NAME="crucible"
 API_URL="https://localhost:5942/api/stats"
 LOG_FILE="/tmp/pandora-monitor.log"
 

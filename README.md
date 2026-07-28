@@ -1,4 +1,4 @@
-# Pandora Toolbox 2.0
+# Crucible: Pandora Toolbox Enhancement (v2.0)
 
 Chemical and Sample Management System - MVP
 
@@ -332,7 +332,7 @@ fuser -k 5942/tcp
 ./container.sh logs
 
 # Restart container with HTTPS
-./container.sh stop && podman rm pandora-toolbox && ./container.sh start-ssl
+./container.sh stop && podman rm crucible && ./container.sh start-ssl
 ```
 
 ### SSL Certificate Mismatch
@@ -360,7 +360,7 @@ echo "Key:  $KEY_HASH"
 
 # Full restart with HTTPS
 ./container.sh stop
-podman rm pandora-toolbox
+podman rm crucible
 ./container.sh start-ssl
 ```
 

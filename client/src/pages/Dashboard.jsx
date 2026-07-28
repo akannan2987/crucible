@@ -106,7 +106,7 @@ export default function Dashboard() {
       <div className="bg-gradient-to-r from-pandora-600 to-pandora-700 rounded-2xl p-8 text-white shadow-lg">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Welcome to Pandora Toolbox 2.0</h1>
+            <h1 className="text-3xl font-bold mb-2">Welcome to Crucible: Pandora Toolbox Enhancement (v2.0)</h1>
             <p className="text-pandora-100 text-lg">
               Chemical & Sample Management System with Electronic Lab Notebook
             </p>

@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# Pandora Toolbox 2.0 - Uninstall & Cleanup Script
-# Safely removes all Pandora Toolbox components from the system
+# Crucible: Pandora Toolbox Enhancement (v2.0) - Uninstall & Cleanup Script
+# Safely removes all Crucible components from the system
 # Run from the project root directory
 
 set -euo pipefail
 
 # ── Configuration ────────────────────────────────────────────
-IMAGE_NAME="pandora-toolbox"
-CONTAINER_NAME="pandora-toolbox"
+IMAGE_NAME="crucible"
+CONTAINER_NAME="crucible"
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 MONITOR_LOG="/tmp/pandora-monitor.log"
 
@@ -37,7 +37,8 @@ confirm() {
 show_header() {
     echo ""
     echo "╔═══════════════════════════════════════════════════════════╗"
-    echo "║   🧪 Pandora Toolbox 2.0 - Uninstall & Cleanup           ║"
+    echo "║   🧪 Crucible: Pandora Toolbox Enhancement (v2.0)        ║"
+    echo "║      Uninstall & Cleanup                                  ║"
     echo "╚═══════════════════════════════════════════════════════════╝"
     echo ""
 }
@@ -195,12 +196,12 @@ remove_node_modules() {
 remove_systemd() {
     echo ""
     echo -e "${BOLD}Step 8: Remove systemd Service (if configured)${NC}"
-    local service_file="/etc/systemd/system/pandora-toolbox.service"
+    local service_file="/etc/systemd/system/crucible.service"
     if [ -f "$service_file" ]; then
         warn "systemd service found — requires sudo to remove"
         if confirm "Remove systemd service?"; then
-            sudo systemctl stop pandora-toolbox 2>/dev/null || true
-            sudo systemctl disable pandora-toolbox 2>/dev/null || true
+            sudo systemctl stop crucible 2>/dev/null || true
+            sudo systemctl disable crucible 2>/dev/null || true
             sudo rm -f "$service_file"
             sudo systemctl daemon-reload
             success "systemd service removed"
@@ -310,8 +311,8 @@ dry_run() {
     fi
 
     # systemd
-    if [ -f "/etc/systemd/system/pandora-toolbox.service" ]; then
-        echo -e "  ${RED}✗${NC} systemd service: pandora-toolbox.service"
+    if [ -f "/etc/systemd/system/crucible.service" ]; then
+        echo -e "  ${RED}✗${NC} systemd service: crucible.service"
     else
         echo -e "  ${GREEN}✓${NC} systemd service: (not installed)"
     fi

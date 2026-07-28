@@ -1,10 +1,11 @@
 #!/bin/bash
 
-# Pandora Toolbox - Post-Clone Setup Script
+# Crucible - Post-Clone Setup Script
 # Run this after cloning the repository
 
 echo "╔═══════════════════════════════════════════════════════════╗"
-echo "║   🧪 Pandora Toolbox 2.0 - Setup After Clone            ║"
+echo "║   🧪 Crucible: Pandora Toolbox Enhancement (v2.0)        ║"
+echo "║      Setup After Clone                                    ║"
 echo "╚═══════════════════════════════════════════════════════════╝"
 echo ""
 

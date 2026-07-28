@@ -1,4 +1,4 @@
-# Database Schema - Pandora Toolbox 2.0
+# Database Schema - Crucible: Pandora Toolbox Enhancement (v2.0)
 
 Complete database schema documentation for the LowDB JSON-based storage system.
 
@@ -17,7 +17,7 @@ Complete database schema documentation for the LowDB JSON-based storage system.
 
 ## Overview
 
-Pandora Toolbox uses **LowDB**, a lightweight JSON database built on Lodash. The entire database is stored in a single JSON file.
+Crucible uses **LowDB**, a lightweight JSON database built on Lodash. The entire database is stored in a single JSON file.
 
 ### File Location
 

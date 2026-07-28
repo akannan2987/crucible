@@ -1,4 +1,4 @@
-# System Architecture - Pandora Toolbox 2.0
+# System Architecture - Crucible: Pandora Toolbox Enhancement (v2.0)
 
 Technical architecture and design documentation for the Chemical and Sample Management System.
 
@@ -20,7 +20,7 @@ Technical architecture and design documentation for the Chemical and Sample Mana
 
 ## Overview
 
-Pandora Toolbox 2.0 is a full-stack web application built with modern JavaScript technologies, designed for managing chemical compounds, samples, and associated research data.
+Crucible: Pandora Toolbox Enhancement (v2.0) is a full-stack web application built with modern JavaScript technologies, designed for managing chemical compounds, samples, and associated research data.
 
 ### Key Characteristics
 

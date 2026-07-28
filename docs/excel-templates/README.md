@@ -1,6 +1,6 @@
-# Excel Templates - Pandora Toolbox 2.0
+# Excel Templates - Crucible: Pandora Toolbox Enhancement (v2.0)
 
-Sample Excel/CSV templates for bulk data import into Pandora Toolbox.
+Sample Excel/CSV templates for bulk data import into Crucible.
 
 ---
 

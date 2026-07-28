@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-# PubChem → Pandora Toolbox: Add chemicals via API
+# PubChem → Crucible: Add chemicals via API
 # ============================================================
 # Usage:
 #   ./docs/pubchem-to-pandora.sh caffeine
@@ -42,7 +42,7 @@ echo "     PubChem CID: $CID"
 echo ""
 
 echo "═══════════════════════════════════════════════════"
-echo "  Step 2: Posting to Pandora Toolbox..."
+echo "  Step 2: Posting to Crucible..."
 echo "═══════════════════════════════════════════════════"
 
 # Use the search term as the display name, IUPAC as description

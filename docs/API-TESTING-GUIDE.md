@@ -1,4 +1,4 @@
-# API Testing Guide - Pandora Toolbox 2.0
+# API Testing Guide - Crucible: Pandora Toolbox Enhancement (v2.0)
 
 ## Quick Start
 
@@ -145,7 +145,7 @@ Step 1: Fetching 'caffeine' from PubChem...
      InChIKey: RYYVLZVUVIJVGH-UHFFFAOYSA-N
      PubChem CID: 2519
 
-Step 2: Posting to Pandora Toolbox...
+Step 2: Posting to Crucible...
   Payload:
     {
       "name": "caffeine",

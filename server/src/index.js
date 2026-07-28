@@ -106,7 +106,8 @@ async function startServer() {
           console.log(`
   ╔═══════════════════════════════════════════════════════════╗
   ║                                                           ║
-  ║   🧪 Pandora Toolbox 2.0 - Chemical & Sample Management   ║
+  ║   🧪 Crucible: Pandora Toolbox Enhancement (v2.0)         ║
+  ║      Chemical & Sample Management                         ║
   ║                                                           ║
   ║   🔒 HTTPS Server running on port ${PORT}                  ║
   ║   https://nr-ubp-dev-02.nihs.ch.nestle.com:${PORT}          ║
@@ -134,7 +135,8 @@ function startHttpServer() {
     console.log(`
   ╔═══════════════════════════════════════════════════════════╗
   ║                                                           ║
-  ║   🧪 Pandora Toolbox 2.0 - Chemical & Sample Management   ║
+  ║   🧪 Crucible: Pandora Toolbox Enhancement (v2.0)         ║
+  ║      Chemical & Sample Management                         ║
   ║                                                           ║
   ║   Server running on port ${PORT}                           ║
   ║   http://nr-ubp-dev-02.nihs.ch.nestle.com:${PORT}           ║

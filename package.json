@@ -1,7 +1,7 @@
 {
-  "name": "pandora-toolbox",
+  "name": "crucible",
   "version": "2.0.0",
-  "description": "Pandora Toolbox 2.0 - Chemical and Sample Management System",
+  "description": "Crucible: Pandora Toolbox Enhancement (v2.0) - Chemical and Sample Management System",
   "private": true,
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",

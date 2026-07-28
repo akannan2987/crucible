@@ -1,11 +1,12 @@
 #!/bin/bash
 
-# Pandora Toolbox 2.0 - Development Startup Script
+# Crucible: Pandora Toolbox Enhancement (v2.0) - Development Startup Script
 # Runs both client and server in development mode
 
 echo "╔═══════════════════════════════════════════════════════════╗"
 echo "║                                                           ║"
-echo "║   🧪 Pandora Toolbox 2.0 - Development Mode               ║"
+echo "║   🧪 Crucible: Pandora Toolbox Enhancement (v2.0)        ║"
+echo "║      Development Mode                                     ║"
 echo "║                                                           ║"
 echo "╚═══════════════════════════════════════════════════════════╝"
 

@@ -1,5 +1,5 @@
 /**
- * Pandora Toolbox 2.0 — API Integration Tests
+ * Crucible: Pandora Toolbox Enhancement (v2.0) — API Integration Tests
  *
  * Run:  cd server && npm test
  *
