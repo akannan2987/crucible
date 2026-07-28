@@ -138,7 +138,7 @@ No rate limiting is currently enforced.
 | Limit | Value | Purpose |
 |-------|-------|---------|
 | JSON body | 50 MB | Maximum size for JSON payloads (POST/PUT requests) |
-| File upload | 100 MB | Maximum size for Excel/SDF file uploads (via Multer) |
+| File upload | 100 MB | Maximum size for Excel/SDF file uploads |
 | Max chemicals | No hard limit* | Not capped by the API; optimized for 15,000+ records |
 | Max samples | No hard limit* | Not capped by the API; optimized for 1,000+ records |
 | Max screening | No hard limit* | Linked to chemicals; not capped |
@@ -525,7 +525,7 @@ Bulk upload chemicals via SDF (Structure Data File). Supports both **V2000** and
 
 The parser extracts structural data (atoms, bonds, coordinates, charges, stereo flags, S-Groups), computes molecular formula (Hill order) and molecular weight from the atom block, and maps over 50 common SDF property field-name variations to the Pandora schema. **Every** `> <FIELD_NAME>` data item is preserved in `metadata` — no field is ever dropped.
 
-Validated against EPA DSSTox / Nestlé regulatory format (77-record fixture: 34 polymers, 36 mixtures, 18 charged-atom records, 6 stereo records). See [`docs/architecture.md`](docs/architecture.md#sdf-parser-serversrcutilssdfparserjs) for the full extraction matrix.
+Validated against EPA DSSTox / Nestlé regulatory format (77-record fixture: 34 polymers, 36 mixtures, 18 charged-atom records, 6 stereo records). Two implementations expose this identical contract: the legacy Node parser (`server/src/utils/sdfParser.js`, extraction matrix in [`docs/architecture.md`](docs/architecture.md#sdf-parser-serversrcutilssdfparserjs)) and the Python backend's RDKit-based module (`backend/app/utils/sdf.py`).
 
 **Endpoint:** `POST /chemicals/upload/sdf`
 

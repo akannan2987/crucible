@@ -118,18 +118,16 @@
 <div class="blob" style="width:520px;height:520px;background:#ec4899;top:30%;right:-150px;"></div>
 <div class="blob" style="width:420px;height:420px;background:#10b981;bottom:-100px;left:30%;"></div>
 
-<!-- Migration status banner: the interactive diagrams below show the LEGACY
-     Node/Express stack; the Python/FastAPI backend is documented separately. -->
+<!-- Migration status banner -->
 <div class="max-w-7xl mx-auto px-6 pt-6">
-  <div class="glass rounded-xl px-5 py-4 border border-amber-400/40" style="background:rgba(251,191,36,.08)">
-    <p class="text-sm text-amber-200">
-      ⚠️ <strong>Migration in progress:</strong> the diagrams on this page describe the
-      <strong>legacy Node.js/Express backend</strong>. The application is being migrated to a
-      <strong>Python/FastAPI backend</strong> (SQLAlchemy&nbsp;+&nbsp;SQLite, RDKit) with an identical API —
-      see <code>docs/architecture.md</code> → “Python Backend (v2.0 Migration)”,
-      <code>docs/database-schema.md</code> → “SQL Schema”, and <code>MIGRATION.md</code>
-      (runbooks &amp; cutover) in the repository. The React client and API contract shown here
-      are accurate for both backends.
+  <div class="glass rounded-xl px-5 py-4 border border-emerald-400/40" style="background:rgba(52,211,153,.08)">
+    <p class="text-sm text-emerald-200">
+      🐍 <strong>v2.0 Python backend:</strong> this page describes the current
+      <strong>Python/FastAPI</strong> architecture (SQLAlchemy&nbsp;+&nbsp;SQLite, RDKit).
+      The legacy Node.js/Express backend remains in <code>server/</code> until cutover and
+      serves the <em>identical</em> API. Deployment runbooks, cutover checklist and rollback:
+      <code>MIGRATION.md</code>; deeper detail: <code>docs/architecture.md</code> and
+      <code>docs/database-schema.md</code> in the repository.
     </p>
   </div>
 </div>
@@ -155,9 +153,10 @@
       <div class="flex flex-wrap gap-2 mt-6">
         <span class="px-3 py-1 rounded-full glass text-xs">🌐 Web App</span>
         <span class="px-3 py-1 rounded-full glass text-xs">⚛️ React + Vite</span>
-        <span class="px-3 py-1 rounded-full glass text-xs">🟢 Node.js + Express</span>
-        <span class="px-3 py-1 rounded-full glass text-xs">📦 Podman Container</span>
-        <span class="px-3 py-1 rounded-full glass text-xs">🔒 HTTPS / TLS</span>
+        <span class="px-3 py-1 rounded-full glass text-xs">🐍 Python + FastAPI</span>
+        <span class="px-3 py-1 rounded-full glass text-xs">🗄️ SQLite + SQLAlchemy</span>
+        <span class="px-3 py-1 rounded-full glass text-xs">🧬 RDKit</span>
+        <span class="px-3 py-1 rounded-full glass text-xs">📦 Podman / Docker</span>
       </div>
     </div>
     <div class="glass rounded-2xl p-5">
@@ -205,17 +204,17 @@
     // Immediate inline script — runs as soon as parsed, buttons already exist above
     (function(){
       var scenarioData = {
-        read:   { labels: ['👁️ View list','📡 GET /api/chemicals','📖 Read pandora.json','📋 Table renders'],
-                  descs:  ['User clicks "View Chemicals" in the sidebar','Axios fires GET request over HTTPS','LowDB loads matching records from JSON','React renders rows into the table'] },
+        read:   { labels: ['👁️ View list','📡 GET /api/chemicals','📖 Read crucible.db','📋 Table renders'],
+                  descs:  ['User clicks "View Chemicals" in the sidebar','Axios fires GET request','SQLAlchemy loads matching records from SQLite','React renders rows into the table'] },
         write:  { labels: ['✏️ Save form','📡 POST /api/chemicals','✅ Validate + write','🎉 Toast: Saved!'],
-                  descs:  ['User fills out the form and clicks Save','Axios POSTs the JSON payload over HTTPS','Express validates then writes to pandora.json','Success toast appears, table refreshes'] },
+                  descs:  ['User fills out the form and clicks Save','Axios POSTs the JSON payload','FastAPI validates then commits to crucible.db','Success toast appears, table refreshes'] },
         upload: { labels: ['📂 Pick Excel','📡 POST upload/excel','🧮 Parse + bulk insert','📊 Summary report'],
-                  descs:  ['User selects an Excel or SDF file','File sent as multipart form-data over HTTPS','XLSX parses rows, validates, bulk-inserts','Summary shows inserted/updated/error counts'] }
+                  descs:  ['User selects an Excel or SDF file','File sent as multipart form-data','openpyxl/RDKit parses rows, validates, bulk-inserts','Summary shows inserted/updated/error counts'] }
       };
       var defaultLabels = ['User Interaction','Secure API Call','Business Logic','UI Updates'];
       var defaultDescs = [
         'Click, search, upload — events captured by React components.',
-        'Axios sends an HTTPS request over TLS to the Express API.',
+        'Axios sends a request to the FastAPI backend.',
         'Server validates input, parses files (Excel/SDF), updates the database.',
         'JSON response flows back; the page refreshes instantly without reload.'
       ];
@@ -359,12 +358,12 @@
           <text x="360" y="298" text-anchor="middle" fill="#94a3b8" font-size="10">Browser · Vite build</text>
         </g>
 
-        <!-- EXPRESS API -->
+        <!-- FASTAPI BACKEND -->
         <g class="node" data-info="express" style="cursor:pointer">
           <rect x="620" y="220" width="170" height="90" rx="16" fill="#3b0764" stroke="#a78bfa" stroke-width="2"/>
-          <text x="705" y="258" text-anchor="middle" font-size="26">🟢</text>
-          <text x="705" y="282" text-anchor="middle" fill="#ede9fe" font-size="13" font-weight="600">Express API</text>
-          <text x="705" y="298" text-anchor="middle" fill="#94a3b8" font-size="10">Node.js · REST routes</text>
+          <text x="705" y="258" text-anchor="middle" font-size="26">🐍</text>
+          <text x="705" y="282" text-anchor="middle" fill="#ede9fe" font-size="13" font-weight="600">FastAPI</text>
+          <text x="705" y="298" text-anchor="middle" fill="#94a3b8" font-size="10">Python · REST routes</text>
         </g>
 
         <!-- DATABASE (drum-style cylinder icon) -->
@@ -377,8 +376,8 @@
             <ellipse cx="0" cy="6" rx="18" ry="6" fill="none" stroke="#a7f3d0" stroke-width="1" opacity="0.7"/>
             <ellipse cx="0" cy="12" rx="18" ry="6" fill="none" stroke="#a7f3d0" stroke-width="1" opacity="0.5"/>
           </g>
-          <text x="515" y="465" text-anchor="middle" fill="#d1fae5" font-size="13" font-weight="600">LowDB</text>
-          <text x="515" y="481" text-anchor="middle" fill="#94a3b8" font-size="10">pandora.json</text>
+          <text x="515" y="465" text-anchor="middle" fill="#d1fae5" font-size="13" font-weight="600">SQLite</text>
+          <text x="515" y="481" text-anchor="middle" fill="#94a3b8" font-size="10">crucible.db · SQLAlchemy</text>
         </g>
 
         <!-- HTTPS lock badge -->
@@ -430,7 +429,7 @@
         <div id="step-card-2" class="glass rounded-xl p-4 lift cursor-pointer step-card" data-step="2">
           <div class="text-lg text-indigo-300">②</div>
           <p class="font-semibold mt-1" id="step-label-2">Secure API Call</p>
-          <p class="text-xs mt-1" id="step-desc-2" style="color:#94a3b8">Axios sends an HTTPS request over TLS to the Express API.</p>
+          <p class="text-xs mt-1" id="step-desc-2" style="color:#94a3b8">Axios sends a request to the FastAPI backend.</p>
         </div>
         <div id="step-card-3" class="glass rounded-xl p-4 lift cursor-pointer step-card" data-step="3">
           <div class="text-lg text-indigo-300">③</div>
@@ -488,17 +487,17 @@
           <div class="flex-1">
             <p class="text-xs uppercase tracking-wider text-violet-300">Layer 2 · API Gateway (Server Routes)</p>
             <h4 class="font-semibold text-lg">The traffic controller &amp; request dispatcher</h4>
-            <p class="text-slate-300 text-sm">An <b>Express.js</b> HTTP server exposing RESTful endpoints over HTTPS on port 49160. Each route maps to a specific resource and operation.</p>
+            <p class="text-slate-300 text-sm">A <b>FastAPI</b> application (served by uvicorn) exposing RESTful endpoints on port 49160. Each route maps to a specific resource and operation — one router file per resource, mirroring the legacy Express routes one-to-one.</p>
             <ul class="text-slate-400 text-xs mt-2 space-y-1 list-disc pl-5">
               <li><code>GET/POST/PUT/DELETE /api/chemicals</code> — CRUD operations for chemical records.</li>
-              <li><code>POST /api/chemicals/upload/excel</code> — bulk import from Excel via Multer + XLSX.</li>
+              <li><code>POST /api/chemicals/upload/excel</code> — bulk import from Excel via UploadFile + openpyxl.</li>
               <li><code>GET/POST /api/samples</code>, <code>/api/screening</code>, <code>/api/toxicology</code> — similar patterns for other collections.</li>
-              <li><code>GET /api/stats</code> — health check and record counts (used by the monitoring cron).</li>
+              <li><code>GET /api/stats</code> — health check and record counts (used by the container healthcheck and monitoring cron).</li>
               <li><b>External API proxy:</b> can call PubChem or LabKey to enrich or sync data without exposing credentials to the frontend.</li>
-              <li>Also serves the compiled React static files (HTML/JS/CSS) so only one port is needed.</li>
+              <li>Also serves the compiled React static files (HTML/JS/CSS) so only one port is needed — plus free interactive API docs at <code>/docs</code>.</li>
             </ul>
           </div>
-          <div class="hidden md:block text-xs text-slate-500">server/src/routes</div>
+          <div class="hidden md:block text-xs text-slate-500">backend/app/routers</div>
         </div>
       </div>
 
@@ -511,7 +510,7 @@
             <p class="text-slate-300 text-sm">Code that runs <em>between</em> receiving the request and writing to the database. This is where domain rules live.</p>
             <ul class="text-slate-400 text-xs mt-2 space-y-1 list-disc pl-5">
               <li><b>Input validation:</b> required fields, format checks (CAS regex, molecular formula patterns), duplicate ID detection.</li>
-              <li><b>File parsing:</b> XLSX library reads Excel rows; the custom SDF parser handles V2000 + V3000 molfiles, S-Groups (polymer/mixture detection), atom charges &amp; stereo, and preserves <em>every</em> regulatory field (EPA DSSTox, EU FCM, US 21 CFR, Nestlé SBL) verbatim in <code>metadata</code>.</li>
+              <li><b>File parsing:</b> openpyxl reads Excel rows (including the SLIMS 3-row header); the RDKit-backed SDF module handles V2000 + V3000 molfiles, S-Groups (polymer/mixture detection), atom charges &amp; stereo, and preserves <em>every</em> regulatory field (EPA DSSTox, EU FCM, US 21 CFR, Nestlé SBL) verbatim in <code>metadata</code>.</li>
               <li><b>External enrichment:</b> calls PubChem REST API to auto-fill formula, MW, SMILES, InChIKey from a CAS number or name.</li>
               <li><b>Capacity enforcement:</b> rejects inserts that would exceed the ~50K performance threshold.</li>
               <li><b>Bulk operations:</b> batch insert/update/delete with per-row error tracking and summary reports.</li>
@@ -528,16 +527,16 @@
           <div class="flex-1">
             <p class="text-xs uppercase tracking-wider text-emerald-300">Layer 4 · Data Persistence (Storage)</p>
             <h4 class="font-semibold text-lg">The memory — where records live</h4>
-            <p class="text-slate-300 text-sm"><b>LowDB</b> stores all data in a single JSON file (<code>data/pandora.json</code>). Chosen for simplicity, zero-config, and human-readable backups.</p>
+            <p class="text-slate-300 text-sm"><b>SQLite</b> stores all data in a single file (<code>data/crucible.db</code>), accessed through the <b>SQLAlchemy 2</b> ORM. Replaced the LowDB JSON file in v2.0; records were imported by an idempotent migration script (<code>backend/scripts/migrate_from_lowdb.py</code>).</p>
             <ul class="text-slate-400 text-xs mt-2 space-y-1 list-disc pl-5">
-              <li><b>4 collections:</b> chemicals, samples, screening, toxicology — linked via chemical_id foreign key (1:many).</li>
-              <li><b>File-based:</b> backup = copy the JSON file; restore = replace it. No database server to manage.</li>
-              <li><b>Performance:</b> sub-50ms reads/writes up to ~50,000 total records across all collections.</li>
-              <li><b>Persistence:</b> mounted as a host volume in Podman so data survives container rebuilds and restarts.</li>
-              <li><b>Migration path:</b> if data grows beyond 50K, swap LowDB adapter for SQLite or PostgreSQL with minimal code changes.</li>
+              <li><b>4 tables:</b> chemicals, samples, screening, toxicology — linked via chemical_id (1:many, by convention).</li>
+              <li><b>Hybrid document pattern:</b> each row keeps the full record verbatim in a JSON <code>doc</code> column + indexed lookup columns, so API responses stayed identical to the LowDB era.</li>
+              <li><b>File-based:</b> backup = copy the file; restore = replace it. No database server to manage.</li>
+              <li><b>Persistence:</b> <code>data/</code> mounted as a host volume in Podman/Docker so data survives container rebuilds and restarts.</li>
+              <li><b>Migration path:</b> PostgreSQL later = change <code>DATABASE_URL</code> (the <code>doc</code> column maps to JSONB natively).</li>
             </ul>
           </div>
-          <div class="hidden md:block text-xs text-slate-500">data/pandora.json</div>
+          <div class="hidden md:block text-xs text-slate-500">data/crucible.db</div>
         </div>
       </div>
     </div>
@@ -660,109 +659,95 @@
         <h4 class="font-semibold text-lg mb-4 flex items-center gap-2">⚙️ Backend</h4>
         <div class="space-y-3 text-sm">
           <div class="glass rounded-lg p-3 lift cursor-pointer" onclick="document.getElementById('node-why').classList.toggle('hidden')">
-            <div class="flex items-center gap-2"><span class="text-xl">🟢</span><b>Node.js 18 (LTS)</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
-            <p class="text-xs text-slate-400 mt-1">JavaScript runtime built on Chrome's V8 engine. Non-blocking I/O makes it perfect for API servers with many concurrent requests. Same language as the frontend = one team, one codebase.</p>
+            <div class="flex items-center gap-2"><span class="text-xl">🐍</span><b>Python 3.12</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
+            <p class="text-xs text-slate-400 mt-1">Backend runtime (python:3.12-slim container). Chosen for the v2.0 rewrite: the maintainer's primary language, and home turf for scientific tooling — RDKit, pandas, openpyxl are all Python-native.</p>
             <div id="node-why" class="hidden mt-3 p-3 rounded-lg border border-green-400/30 bg-slate-900/60 text-xs space-y-2">
-              <p class="font-semibold text-green-200">🤔 Why Node.js over alternatives?</p>
+              <p class="font-semibold text-green-200">🤔 Why Python over staying on Node.js?</p>
               <table class="w-full text-left text-slate-300">
                 <thead><tr class="text-green-300"><th class="pb-1">Option</th><th class="pb-1">Verdict</th></tr></thead>
                 <tbody>
-                  <tr><td class="pr-2 py-0.5"><b>Python (Flask/Django)</b></td><td>Great for data science but adds a second language. Django is heavy for a REST API. Slower for concurrent I/O.</td></tr>
-                  <tr><td class="pr-2 py-0.5"><b>Go</b></td><td>Excellent performance but compiled language, steeper learning curve, smaller web middleware ecosystem.</td></tr>
-                  <tr><td class="pr-2 py-0.5"><b>Java (Spring Boot)</b></td><td>Enterprise-grade but massive boilerplate, slow startup, heavy memory footprint for a simple API.</td></tr>
-                  <tr><td class="pr-2 py-0.5"><b>Deno / Bun</b></td><td>Modern runtimes but immature ecosystems. npm compatibility issues. Not battle-tested in production.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Node.js (status quo)</b></td><td>Worked, but the sole maintainer is a Python developer; JS expertise was the bottleneck for every change. Kept as the legacy stack until cutover.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Go / Java</b></td><td>Fast, but no RDKit, and a steeper curve for an intermediate Python maintainer.</td></tr>
                 </tbody>
               </table>
-              <p class="text-slate-400 pt-1"><b>Winner: Node.js</b> — same language as React (JavaScript everywhere), non-blocking I/O for handling 50-100 concurrent users, massive npm ecosystem, and LTS guarantees stability for years.</p>
+              <p class="text-slate-400 pt-1"><b>Winner: Python</b> — maintainability by the actual team, first-class chemistry libraries (RDKit), and type hints + Pydantic give the API a safety net JavaScript never had. Migrated strangler-fig style with parity tests so the React client never noticed.</p>
             </div>
           </div>
           <div class="glass rounded-lg p-3 lift cursor-pointer" id="express-card" onclick="document.getElementById('express-why').classList.toggle('hidden')">
-            <div class="flex items-center gap-2"><span class="text-xl">🚂</span><b>Express.js</b> <span class="text-xs text-indigo-300 ml-auto">▶ click for details</span></div>
-            <p class="text-xs text-slate-400 mt-1">Minimal, un-opinionated web framework. Mature (10+ years), massive middleware ecosystem, and trivial to set up REST routes. The de facto standard for Node.js APIs.</p>
+            <div class="flex items-center gap-2"><span class="text-xl">⚡</span><b>FastAPI + uvicorn</b> <span class="text-xs text-indigo-300 ml-auto">▶ click for details</span></div>
+            <p class="text-xs text-slate-400 mt-1">Modern Python web framework (<code>backend/app/</code>). Declarative routes, dependency injection, Pydantic validation, and free interactive API docs at <code>/docs</code>. Served by uvicorn on port 49160 — same endpoints, same responses as the Express API it replaces.</p>
             <div id="express-why" class="hidden mt-3 p-3 rounded-lg border border-violet-400/30 bg-slate-900/60 text-xs space-y-2">
-              <p class="font-semibold text-violet-200">🤔 Why Express over alternatives?</p>
+              <p class="font-semibold text-violet-200">🤔 Why FastAPI over alternatives?</p>
               <table class="w-full text-left text-slate-300">
                 <thead><tr class="text-violet-300"><th class="pb-1">Option</th><th class="pb-1">Verdict</th></tr></thead>
                 <tbody class="space-y-1">
-                  <tr><td class="pr-2 py-0.5"><b>Next.js API routes</b></td><td>Overkill — includes SSR, file-based routing, React server components. Pandora's React is pre-built; no SSR needed.</td></tr>
-                  <tr><td class="pr-2 py-0.5"><b>Fastify</b></td><td>Faster benchmarks, but smaller plugin ecosystem. Multer, helmet, cors all built for Express first.</td></tr>
-                  <tr><td class="pr-2 py-0.5"><b>Koa</b></td><td>Lighter than Express but less middleware out of the box. Extra boilerplate for file uploads.</td></tr>
-                  <tr><td class="pr-2 py-0.5"><b>Hapi</b></td><td>More opinionated, heavier config. Good for large teams, overkill for a single-purpose API.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Flask</b></td><td>Simple, but validation, typing, and OpenAPI docs are all add-ons. FastAPI has them built in.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Django / DRF</b></td><td>Full-stack framework with its own ORM, admin, and conventions — heavy for a REST API with an existing React frontend.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>aiohttp / Starlette raw</b></td><td>Lower-level; more boilerplate for routing, validation, and docs.</td></tr>
                 </tbody>
               </table>
-              <p class="text-slate-400 pt-1"><b>Winner: Express</b> — maximum middleware compatibility (Multer, CORS, helmet), zero learning curve, 10+ years of battle-tested stability, and every Node.js developer already knows it.</p>
-              <p class="text-slate-400">⚠️ <b>React alone is NOT enough.</b> React runs in the browser — it cannot read/write files, store persistent data, handle uploads securely, or call external APIs without exposing credentials. A backend (Express) is mandatory.</p>
+              <p class="text-slate-400 pt-1"><b>Winner: FastAPI</b> — type-hint-driven (parameters parse and document themselves), Pydantic request models, and an OpenAPI UI for free. One file per legacy Express route file keeps the port reviewable side-by-side.</p>
+              <p class="text-slate-400">⚠️ <b>React alone is NOT enough.</b> React runs in the browser — it cannot read/write files, store persistent data, or handle uploads securely. A backend (FastAPI here) is mandatory.</p>
             </div>
           </div>
           <div class="glass rounded-lg p-3 lift cursor-pointer" onclick="document.getElementById('lowdb-why').classList.toggle('hidden')">
-            <div class="flex items-center gap-2"><span class="text-xl">🗄️</span><b>LowDB</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
-            <p class="text-xs text-slate-400 mt-1">Flat-file JSON database. Zero config, no external server, human-readable data file. Chosen because Pandora needs simplicity and portability over high-concurrency writes. Easy to back up and inspect.</p>
+            <div class="flex items-center gap-2"><span class="text-xl">🗄️</span><b>SQLite + SQLAlchemy 2</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
+            <p class="text-xs text-slate-400 mt-1">A real database in a single file (<code>data/crucible.db</code>), accessed through the SQLAlchemy ORM. Replaces the LowDB JSON file; existing records were imported by an idempotent one-shot migration script. Backup is still just a file copy.</p>
             <div id="lowdb-why" class="hidden mt-3 p-3 rounded-lg border border-emerald-400/30 bg-slate-900/60 text-xs space-y-2">
-              <p class="font-semibold text-emerald-200">🤔 Why LowDB over a real database?</p>
+              <p class="font-semibold text-emerald-200">🤔 Why SQLite (and how the schemaless data fits)?</p>
               <table class="w-full text-left text-slate-300">
                 <thead><tr class="text-emerald-300"><th class="pb-1">Option</th><th class="pb-1">Verdict</th></tr></thead>
                 <tbody>
-                  <tr><td class="pr-2 py-0.5"><b>PostgreSQL</b></td><td>Industrial strength but requires a separate server, config, migrations, connection pooling. Overkill for &lt;50K records.</td></tr>
-                  <tr><td class="pr-2 py-0.5"><b>MongoDB</b></td><td>Document DB but needs a daemon, uses significant memory, and adds operational complexity.</td></tr>
-                  <tr><td class="pr-2 py-0.5"><b>SQLite</b></td><td>Good middle ground — file-based, fast. But requires native bindings (node-gyp issues in containers).</td></tr>
-                  <tr><td class="pr-2 py-0.5"><b>In-memory only</b></td><td>Data lost on restart. Not acceptable for a lab notebook.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Keep LowDB JSON</b></td><td>Whole file rewritten on every change; no indexes or transactions; JS-only tooling.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>PostgreSQL now</b></td><td>Needs a running server on the VM — extra ops for &lt;50K records. Kept as the upgrade path: switching is a <code>DATABASE_URL</code> change.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>MongoDB</b></td><td>Document fit is fine, but a daemon + memory footprint for a single-user lab app is overkill.</td></tr>
                 </tbody>
               </table>
-              <p class="text-slate-400 pt-1"><b>Winner: LowDB</b> — zero dependencies, human-readable JSON, backup = file copy, works in any environment. Migration to SQLite/PostgreSQL is easy if needed later (adapter pattern).</p>
+              <p class="text-slate-400 pt-1"><b>Winner: SQLite</b> — zero-ops, transactional, and Python-native. Each table uses a <b>hybrid document pattern</b>: the full record lives verbatim in a JSON <code>doc</code> column (so API responses stayed byte-identical to LowDB days), plus indexed columns (<code>id</code>, business key, <code>created_at</code>, insertion order) for lookups.</p>
             </div>
           </div>
           <div class="glass rounded-lg p-3 lift cursor-pointer" onclick="document.getElementById('multer-why').classList.toggle('hidden')">
-            <div class="flex items-center gap-2"><span class="text-xl">📂</span><b>Multer</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
-            <p class="text-xs text-slate-400 mt-1">Express middleware for multipart/form-data (file uploads). Handles Excel and SDF file uploads with configurable size limits, file type filtering, and memory/disk storage.</p>
+            <div class="flex items-center gap-2"><span class="text-xl">📂</span><b>FastAPI UploadFile</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
+            <p class="text-xs text-slate-400 mt-1">File uploads (Excel/SDF) are handled by FastAPI's built-in <code>UploadFile</code> (powered by <code>python-multipart</code>) — the same multipart/form-data field name (<code>file</code>) as the legacy Multer setup, so the React upload pages work unchanged.</p>
             <div id="multer-why" class="hidden mt-3 p-3 rounded-lg border border-blue-400/30 bg-slate-900/60 text-xs space-y-2">
-              <p class="font-semibold text-blue-200">🤔 Why Multer?</p>
-              <table class="w-full text-left text-slate-300">
-                <thead><tr class="text-blue-300"><th class="pb-1">Option</th><th class="pb-1">Verdict</th></tr></thead>
-                <tbody>
-                  <tr><td class="pr-2 py-0.5"><b>Busboy</b></td><td>Lower-level streaming parser. More control but more boilerplate code needed.</td></tr>
-                  <tr><td class="pr-2 py-0.5"><b>Formidable</b></td><td>Works but not Express-native. Requires manual integration with req/res cycle.</td></tr>
-                  <tr><td class="pr-2 py-0.5"><b>express-fileupload</b></td><td>Simpler API but fewer options for size limits, filtering, and storage strategies.</td></tr>
-                </tbody>
-              </table>
-              <p class="text-slate-400 pt-1"><b>Winner: Multer</b> — built specifically for Express, configurable storage (memory/disk), file size limits, MIME type filtering, and the most documented solution.</p>
+              <p class="font-semibold text-blue-200">🤔 Why UploadFile?</p>
+              <p class="text-slate-300">No separate middleware needed: declare <code>file: UploadFile = File(...)</code> in the route signature and FastAPI parses the multipart body, streams big files to a spooled temp file, and hands over bytes with <code>await file.read()</code>. A missing file returns the same <code>400 {"error": "No file uploaded"}</code> the Express API produced.</p>
             </div>
           </div>
           <div class="glass rounded-lg p-3 lift cursor-pointer" onclick="document.getElementById('xlsx-why').classList.toggle('hidden')">
-            <div class="flex items-center gap-2"><span class="text-xl">📊</span><b>XLSX (SheetJS)</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
-            <p class="text-xs text-slate-400 mt-1">Pure-JS Excel parser supporting .xlsx, .xls, .csv. Reads uploaded spreadsheets into JSON arrays for bulk import. No native dependencies — works in any environment.</p>
+            <div class="flex items-center gap-2"><span class="text-xl">📊</span><b>openpyxl</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
+            <p class="text-xs text-slate-400 mt-1">The standard Python Excel reader (<code>backend/app/utils/excel.py</code>). Parses .xlsx uploads — including the SLIMS sample export with its unusual 3-row header — plus a small RFC-4180 CSV parser that keeps CAS numbers like <code>58-08-2</code> as text instead of mangling them into dates.</p>
             <div id="xlsx-why" class="hidden mt-3 p-3 rounded-lg border border-teal-400/30 bg-slate-900/60 text-xs space-y-2">
-              <p class="font-semibold text-teal-200">🤔 Why SheetJS?</p>
+              <p class="font-semibold text-teal-200">🤔 Why openpyxl?</p>
               <table class="w-full text-left text-slate-300">
                 <thead><tr class="text-teal-300"><th class="pb-1">Option</th><th class="pb-1">Verdict</th></tr></thead>
                 <tbody>
-                  <tr><td class="pr-2 py-0.5"><b>ExcelJS</b></td><td>Good for writing Excel files but slower for read-only parsing. Larger memory footprint.</td></tr>
-                  <tr><td class="pr-2 py-0.5"><b>csv-parser</b></td><td>CSV only — doesn't handle .xlsx or .xls formats that scientists commonly use.</td></tr>
-                  <tr><td class="pr-2 py-0.5"><b>Python (openpyxl)</b></td><td>Would require a second runtime. Can't call from Node.js directly.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>pandas.read_excel</b></td><td>Available (pandas is installed), but it type-coerces cells aggressively; the SLIMS parser needs raw, string-faithful cell access. pandas uses openpyxl underneath anyway.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>xlrd</b></td><td>Dropped .xlsx support years ago; legacy .xls only.</td></tr>
                 </tbody>
               </table>
-              <p class="text-slate-400 pt-1"><b>Winner: SheetJS (XLSX)</b> — pure JavaScript (no native bindings), supports all Excel formats + CSV, fast parsing, and works identically in browser and Node.js.</p>
+              <p class="text-slate-400 pt-1"><b>Winner: openpyxl</b> — faithful cell-level control, mirroring the legacy SheetJS <code>raw:false</code> behaviour so uploaded values land in the database formatted exactly as before.</p>
             </div>
           </div>
           <div class="glass rounded-lg p-3 lift cursor-pointer" onclick="document.getElementById('sdf-why').classList.toggle('hidden')">
-            <div class="flex items-center gap-2"><span class="text-xl">🧬</span><b>SDF Parser</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
-            <p class="text-xs text-slate-400 mt-1">In-house V2000/V3000 molfile + SDF parser (<code>server/src/utils/sdfParser.js</code>). Extracts atoms, bonds, S-Groups (SRU/MUL/COP/MIX/SUP), formal charges, and stereo flags; derives polymer / mixture / stereochemistry intelligence; and preserves every <code>&gt; &lt;FIELD&gt;</code> data block in <code>metadata</code>. Validated against 77 EPA/Nestlé records (24 unit tests, all passing).</p>
+            <div class="flex items-center gap-2"><span class="text-xl">🧬</span><b>RDKit (SDF handling)</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
+            <p class="text-xs text-slate-400 mt-1">The industry-standard chemistry toolkit powers SDF ingestion (<code>backend/app/utils/sdf.py</code>), replacing the in-house JS parser. Hybrid design: record text (MOL block + every <code>&gt; &lt;FIELD&gt;</code> item) is preserved verbatim; RDKit supplies the structural intelligence — formula/weight, S-Groups (SRU/MUL/COP → polymer detection), charges, radicals, stereo, mixtures.</p>
             <div id="sdf-why" class="hidden mt-3 p-3 rounded-lg border border-pink-400/30 bg-slate-900/60 text-xs space-y-2">
-              <p class="font-semibold text-pink-200">🤔 Why a custom parser?</p>
+              <p class="font-semibold text-pink-200">🤔 Why RDKit now (vs the custom JS parser)?</p>
               <table class="w-full text-left text-slate-300">
                 <thead><tr class="text-pink-300"><th class="pb-1">Option</th><th class="pb-1">Verdict</th></tr></thead>
                 <tbody>
-                  <tr><td class="pr-2 py-0.5"><b>RDKit-JS / OpenBabel</b></td><td>Powerful but heavy (WASM/native), and they normalize/lose vendor regulatory fields we need verbatim.</td></tr>
-                  <tr><td class="pr-2 py-0.5"><b>openchemlib</b></td><td>Good structural support but does not surface S-Group polymer labels or preserve unknown SDF properties.</td></tr>
-                  <tr><td class="pr-2 py-0.5"><b>Regex-only</b></td><td>Too fragile for V3000 continuation lines, multi-line S-Groups, and stereo collections.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Port the JS parser line-by-line</b></td><td>850 lines of hand-rolled V2000/V3000 parsing to maintain forever; RDKit does it better and is battle-tested.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>RDKit alone (no text layer)</b></td><td>Would normalize the MOL block and could drop vendor regulatory fields — the app must keep them verbatim.</td></tr>
                 </tbody>
               </table>
-              <p class="font-semibold text-pink-200 pt-1">3-tier extraction strategy</p>
+              <p class="font-semibold text-pink-200 pt-1">Same 3-tier extraction contract as before</p>
               <ul class="list-disc pl-5 text-slate-300 space-y-0.5">
-                <li><b>Tier 1 — Named fields:</b> <code>dtxsid</code>, <code>preferred_name</code>, <code>monoisotopic_mass</code>, <code>ms_ready_smiles</code>, <code>synonyms[]</code>, CAS, InChI, SMILES (50+ aliases, case-insensitive).</li>
-                <li><b>Tier 2 — Catch-all:</b> every other <code>&gt; &lt;FIELD&gt;</code> kept in <code>metadata</code> (EU FCM code, US 21 CFR, Nestlé SBL, ADI/TDI, SML, …).</li>
-                <li><b>Tier 3 — Structural intelligence:</b> derived <code>structural{}</code> object: <code>isPolymer</code>, <code>polymerLabels[]</code>, <code>isMixture</code>, <code>componentCount</code>, <code>hasStereochemistry</code>, <code>totalCharge</code>, <code>sGroupTypes[]</code>.</li>
+                <li><b>Tier 1 — Named fields:</b> <code>dtxsid</code>, <code>preferred_name</code>, <code>monoisotopic_mass</code>, <code>ms_ready_smiles</code>, <code>synonyms[]</code>, CAS, InChI, SMILES (50+ aliases, case-insensitive — mapping tables ported verbatim).</li>
+                <li><b>Tier 2 — Catch-all:</b> every other <code>&gt; &lt;FIELD&gt;</code> kept in <code>metadata</code> (EU FCM code, US 21 CFR, Nestlé SBL, ADI/TDI, SML, …) — parsed textually, nothing dropped.</li>
+                <li><b>Tier 3 — Structural intelligence:</b> derived <code>structural{}</code> object: <code>isPolymer</code>, <code>polymerLabels[]</code>, <code>isMixture</code>, <code>componentCount</code>, <code>hasStereochemistry</code>, <code>totalCharge</code>, <code>sGroupTypes[]</code> — now computed by RDKit.</li>
               </ul>
-              <p class="text-slate-400 pt-1"><b>Winner: custom parser</b> — pure-JS (no native deps), lossless metadata preservation, and aware of regulatory polymer/mixture conventions used by EPA DSSTox and Nestlé.</p>
+              <p class="text-slate-400 pt-1"><b>Winner: hybrid RDKit</b> — pip-installable wheel (macOS arm64 + linux x86_64), professional-grade chemistry, and lossless regulatory metadata. The legacy JS parser remains in <code>server/</code> until cutover.</p>
             </div>
           </div>
           <div class="glass rounded-lg p-3 lift cursor-pointer" onclick="document.getElementById('uuid-why').classList.toggle('hidden')">
@@ -848,7 +833,7 @@
                   <tr><td class="pr-2 py-0.5"><b>Let's Encrypt</b></td><td>Great for public sites but Pandora is internal-only. Nestlé has its own CA.</td></tr>
                 </tbody>
               </table>
-              <p class="text-slate-400 pt-1"><b>Winner: Node.js native HTTPS</b> — Express serves TLS directly using Nestlé's official certs. No extra proxy needed. One port, one process, end-to-end encrypted.</p>
+              <p class="text-slate-400 pt-1"><b>Status in v2.0:</b> the legacy Express stack served TLS in-process with Nestlé's certs. The Python backend currently serves HTTP (like the current production setup); when TLS is needed, terminate it at a reverse proxy or via uvicorn's <code>--ssl-certfile/--ssl-keyfile</code> — tracked as an open item in MIGRATION.md.</p>
             </div>
           </div>
           <div class="glass rounded-lg p-4 lift cursor-pointer" onclick="document.getElementById('cron-why').classList.toggle('hidden')">
@@ -889,11 +874,11 @@
         <div class="grid md:grid-cols-3 gap-4 text-xs text-slate-300">
           <div>
             <p class="font-semibold text-indigo-200 mb-1">🎯 Simplicity</p>
-            <p>One language (JavaScript) for both frontend and backend. One JSON file for the database. One container for deployment. Minimal moving parts = minimal failure points.</p>
+            <p>One single-file database (SQLite). One container for deployment. A backend in the maintainer's primary language (Python). Minimal moving parts = minimal failure points.</p>
           </div>
           <div>
             <p class="font-semibold text-indigo-200 mb-1">🚀 Speed of development</p>
-            <p>React + Vite hot reload, Express minimal boilerplate, LowDB zero-config. A new feature can go from idea to production in hours, not weeks.</p>
+            <p>React + Vite hot reload, FastAPI's declarative routes with auto-docs, SQLite zero-config. A new feature can go from idea to production in hours, not weeks.</p>
           </div>
           <div>
             <p class="font-semibold text-indigo-200 mb-1">📦 Portability</p>
@@ -1031,17 +1016,17 @@
           <rect x="130" y="120" width="540" height="260" rx="18" fill="#1e293b" stroke="#a78bfa" stroke-width="2" stroke-dasharray="6 4"/>
           <text x="155" y="145" fill="#c4b5fd" font-size="13" font-weight="700">📦 Podman Container · port 49160</text>
 
-          <!-- Express -->
+          <!-- FastAPI -->
           <rect x="160" y="170" width="220" height="80" rx="12" fill="#3b0764" stroke="#a78bfa" stroke-width="1.5"/>
-          <text x="270" y="200" text-anchor="middle" font-size="22">🟢</text>
-          <text x="270" y="222" text-anchor="middle" fill="#ede9fe" font-size="12" font-weight="600">Node + Express</text>
+          <text x="270" y="200" text-anchor="middle" font-size="22">🐍</text>
+          <text x="270" y="222" text-anchor="middle" fill="#ede9fe" font-size="12" font-weight="600">Python + FastAPI</text>
           <text x="270" y="238" text-anchor="middle" fill="#94a3b8" font-size="10">serves React + API</text>
 
           <!-- Data volume -->
           <rect x="410" y="170" width="220" height="80" rx="12" fill="#064e3b" stroke="#34d399" stroke-width="1.5"/>
           <text x="520" y="200" text-anchor="middle" font-size="22">💾</text>
           <text x="520" y="222" text-anchor="middle" fill="#d1fae5" font-size="12" font-weight="600">Data volume</text>
-          <text x="520" y="238" text-anchor="middle" fill="#94a3b8" font-size="10">pandora.json (persisted)</text>
+          <text x="520" y="238" text-anchor="middle" fill="#94a3b8" font-size="10">crucible.db (persisted)</text>
 
           <!-- Certs -->
           <rect x="160" y="280" width="470" height="70" rx="12" fill="#831843" stroke="#f472b6" stroke-width="1.5"/>
@@ -1090,7 +1075,7 @@
   <!-- FOOTER -->
   <footer class="text-center text-xs text-slate-500 py-12">
     <p>Crucible: Pandora Toolbox Enhancement (v2.0) · Nestlé Research · Computational Sciences · Interactive architecture · v1.0</p>
-    <p class="mt-1">Built using React, Express, LowDB &amp; Podman.</p>
+    <p class="mt-1">Built using React, FastAPI, SQLite/SQLAlchemy, RDKit &amp; Podman/Docker.</p>
   </footer>
 </main>
 
@@ -1143,20 +1128,22 @@
             'data using Axios over HTTPS, then re-renders only what changed.'
     },
     express: {
-      title: '🟢 Express API — The traffic controller',
-      body: 'A Node.js 18 server using the Express framework. It exposes REST endpoints like /api/chemicals, ' +
-            '/api/samples, /api/screening and /api/toxicology. Its jobs: receive requests, validate the data, ' +
-            'parse Excel/SDF uploads (XLSX & Multer), apply business rules (unique IDs, capacity limits), ' +
-            'and talk to the database. It can also call external APIs like PubChem to auto-fill chemical ' +
-            'properties (formula, MW, SMILES, InChIKey) from a CAS number or compound name. ' +
-            'It also serves the compiled React app to the browser on port 49160.'
+      title: '🐍 FastAPI backend — The traffic controller',
+      body: 'A Python 3.12 application using the FastAPI framework, served by uvicorn. It exposes REST endpoints ' +
+            'like /api/chemicals, /api/samples, /api/screening and /api/toxicology — the identical contract the ' +
+            'legacy Express server had. Its jobs: receive requests, validate the data (Pydantic), parse Excel/SDF ' +
+            'uploads (openpyxl & RDKit), apply business rules (unique IDs, duplicate detection), and talk to the ' +
+            'database through SQLAlchemy. It can also call external APIs like PubChem to auto-fill chemical ' +
+            'properties from a CAS number. It also serves the compiled React app to the browser on port 49160, ' +
+            'and free interactive API docs at /docs.'
     },
     db: {
-      title: '🗄️ LowDB — The single-file database',
-      body: 'A lightweight JSON-based database stored as one file: pandora.json. It holds four collections — ' +
-            'chemicals, samples, screening and toxicology — with a one-to-many link from each chemical to its ' +
-            'related records. Easy to back up (just copy the file), easy to inspect, and performant up to ' +
-            '~50,000 total records. Beyond that, consider migrating to SQLite or PostgreSQL. The file lives on a persistent volume so data survives container restarts.'
+      title: '🗄️ SQLite — The single-file database',
+      body: 'A real SQL database stored as one file: crucible.db, accessed through the SQLAlchemy 2 ORM. It holds ' +
+            'four tables — chemicals, samples, screening and toxicology — each keeping the full record verbatim in ' +
+            'a JSON doc column plus indexed lookup columns (the hybrid document pattern that kept API responses ' +
+            'identical to the LowDB era). Easy to back up (copy the file), transactional, and upgradeable to ' +
+            'PostgreSQL by changing DATABASE_URL. The file lives on a persistent volume so data survives container restarts.'
     },
     pubchem: {
       title: '🌐 PubChem API — External chemical database',
@@ -1164,7 +1151,7 @@
             'to auto-fill chemical properties: given a CAS number or compound name, PubChem returns the molecular ' +
             'formula, weight, SMILES, InChIKey, and IUPAC name. This saves manual data entry and ensures accuracy. ' +
             'Example: entering CAS "58-08-2" auto-fills Caffeine, C₈H₁₀N₄O₂, MW 194.19. The call goes from the ' +
-            'Express server to PubChem\'s REST API and takes ~200ms.'
+            'backend server to PubChem\'s REST API and takes ~200ms.'
     }
   };
 
@@ -1225,12 +1212,12 @@
     '3': {
       title: '③ Business Logic & Database — The real work',
       html: `
-        <p>The Express API receives the request and runs the business rules before touching any data:</p>
+        <p>The FastAPI backend receives the request and runs the business rules before touching any data:</p>
         <ul class="list-disc pl-5 space-y-1">
-          <li><b>Validation:</b> required fields present, formats correct, IDs unique, total record count within the 50K performance threshold.</li>
-          <li><b>File parsing:</b> XLSX parses Excel spreadsheets, the SDF parser reads chemical structure files.</li>
+          <li><b>Validation:</b> required fields present, formats correct, IDs unique (duplicate chemical IDs rejected with a clear error).</li>
+          <li><b>File parsing:</b> openpyxl parses Excel spreadsheets, the RDKit-backed SDF module reads chemical structure files.</li>
           <li><b>External API lookup:</b> If a CAS number or name is provided, the server can call <b>PubChem</b> (<code>pubchem.ncbi.nlm.nih.gov</code>) to auto-fill formula, MW, SMILES, and InChIKey.</li>
-          <li><b>Database operation:</b> LowDB reads or writes to <code>pandora.json</code>. Inserts, updates, bulk deletes — all happen here.</li>
+          <li><b>Database operation:</b> SQLAlchemy reads or writes <code>crucible.db</code> (SQLite). Inserts, updates, bulk deletes — all happen here, transactionally.</li>
           <li><b>Error handling:</b> if anything goes wrong, a clean error message is prepared (never leaking technical details).</li>
         </ul>
         <p class="text-xs text-slate-400">Simple Explanation: the server checks the request, does the job, and saves the result.</p>

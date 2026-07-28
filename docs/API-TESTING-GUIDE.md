@@ -75,13 +75,13 @@ You'll see the JSON response right in the browser.
 
 > ⚠️ **Not implemented today.** The Pandora server does **not** expose a PubChem lookup endpoint. The `curl`/script methods above call PubChem **directly**, independently of the Pandora API.
 
-A future enhancement could let a user type a CAS number and have the **Express server** call PubChem to auto-fill the details. The intended flow would be:
+A future enhancement could let a user type a CAS number and have the **backend** (Express today, FastAPI after the Python migration) call PubChem to auto-fill the details. The intended flow would be:
 
 ```
-User enters CAS → React Frontend → Express API → PubChem API → Returns data → Auto-fills form
+User enters CAS → React Frontend → Backend API → PubChem API → Returns data → Auto-fills form
 ```
 
-That would require a new Express route (e.g., `/api/chemicals/lookup/:cas`), which does not exist in the current codebase.
+That would require a new backend route (e.g., `/api/chemicals/lookup/:cas`), which does not exist in the current codebase (neither in the Express nor the FastAPI implementation).
 
 ---
 

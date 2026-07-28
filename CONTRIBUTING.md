@@ -46,12 +46,12 @@ We are committed to providing a welcoming and inspiring community for all. Pleas
 
 ### Prerequisites
 
-- Node.js 18+
-- npm 8+
+- Node.js 18+ and npm 8+ (client + legacy server)
+- Python 3.12+ (new FastAPI backend in `backend/`)
 - Git
 - OpenSSL (for certificate verification)
 - Podman or Docker (for container testing)
-- Basic knowledge of React and Express
+- Basic knowledge of React, and of Express and/or FastAPI
 
 ### Fork and Clone
 
@@ -457,12 +457,22 @@ const ChemicalCard = ({ chemical, onDelete }) => {
 // Avoid large components with multiple responsibilities
 ```
 
-### Backend (Express)
+### Backend — Python (FastAPI, `backend/`) — the primary backend
+
+- Type hints everywhere; docstrings on public functions
+- Pydantic models for request bodies (kept lenient — see `backend/app/schemas.py`)
+- **API parity is the contract**: any change to a route must keep the response
+  shape identical to `API.md` and pass `backend/tests/` (`.venv/bin/pytest`)
+- Prefer clear, idiomatic code over clever one-liners; explain advanced
+  constructs (DI, sessions, validators) with a short comment on first use
+
+### Backend — Node (Express, `server/`) — legacy, kept until cutover
 
 - Use async/await instead of callbacks
 - Handle errors properly
 - Validate input data
 - Use meaningful variable names
+- Behaviour changes here must be mirrored in the Python backend (and vice versa)
 
 **Example:**
 
@@ -704,18 +714,33 @@ client/src/
 ├── utils/            # Utility functions
 └── styles/           # Global styles
 
-server/src/
+backend/              # Python backend (FastAPI) — the new stack
+├── app/
+│   ├── main.py       # App factory, static/SPA serving, error handling
+│   ├── routers/      # FastAPI routers (one file per Express route file)
+│   ├── models.py     # SQLAlchemy models (hybrid document pattern)
+│   ├── schemas.py    # Pydantic request models
+│   ├── store.py      # Data-access helpers
+│   ├── compat.py     # JS-semantics helpers (parity)
+│   └── utils/        # RDKit SDF, SLIMS Excel, generic Excel parsing
+├── scripts/          # migrate_from_lowdb.py
+├── tests/            # Parity tests (pytest)
+└── Dockerfile        # python:3.12-slim image (multi-stage)
+
+server/src/           # Legacy Node backend (kept until cutover)
 ├── routes/           # Express route handlers
 ├── utils/            # Utility functions
 └── database.js       # Database configuration
 
 Root:
-├── container.sh      # Container management script
+├── container.sh      # Container management — legacy Node stack
+├── container-py.sh   # Container management — Python stack (podman/docker)
 ├── monitor.sh        # Health monitoring script
 ├── setup-after-clone.sh  # Post-clone setup with SSL certs
 ├── uninstall.sh      # Uninstall & cleanup script
 ├── .gitignore        # Protects certs, data, keys
-├── Dockerfile        # Container image definition
+├── Dockerfile        # Legacy Node container image
+├── MIGRATION.md      # Migration guide, runbooks, cutover plan
 └── docs/             # Documentation
 ```
 

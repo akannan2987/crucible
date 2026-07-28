@@ -6,12 +6,25 @@ A comprehensive web application for managing chemical compounds, samples, screen
 
 ## 🚀 Quick Start
 
-### Fresh Clone (Recommended)
+### Python backend (recommended — the new stack)
+
+```bash
+git clone https://github.com/akannan2987/crucible.git
+cd crucible
+
+./container-py.sh build      # build (auto-detects podman or docker)
+./container-py.sh start      # run on http://localhost:49160
+./container-py.sh migrate    # import existing lowdb data (idempotent)
+```
+
+Full runbooks (macOS Docker/Podman, RHEL8 Podman): **[MIGRATION.md](MIGRATION.md)**
+
+### Legacy Node backend — fresh clone
 
 ```bash
 # Clone the repository
-git clone <repository-url> nr-nips-forrest-gump-pandora-enhancement
-cd nr-nips-forrest-gump-pandora-enhancement
+git clone https://github.com/akannan2987/crucible.git
+cd crucible
 
 # Run the automated setup script
 chmod +x setup-after-clone.sh
@@ -59,20 +72,30 @@ Access the application:
 
 ## 🏗️ Architecture
 
-**Tech Stack:**
-- **Frontend**: React 18 + Vite 5 + Tailwind CSS 3.4
+> ⚙️ **Migration in progress (strangler fig):** the backend is being replaced
+> by a **Python/FastAPI** implementation with an identical API. Both backends
+> currently coexist in this repo; the React client works unchanged against
+> either. See **[MIGRATION.md](MIGRATION.md)** for runbooks and the cutover plan.
+
+**Tech Stack (new — Python backend, `backend/`):**
+- **Frontend**: React 18 + Vite 5 + Tailwind CSS 3.4 (unchanged)
+- **Backend**: Python 3.12 + FastAPI + uvicorn
+- **Database**: SQLite via SQLAlchemy 2 (`data/crucible.db`; PostgreSQL-ready via `DATABASE_URL`)
+- **Chemistry**: RDKit (SDF/structure handling)
+- **Excel**: openpyxl (SLIMS sample template + chemical templates)
+- **Container**: `crucible-py` image, managed by `container-py.sh` (podman or docker)
+
+**Tech Stack (legacy — Node backend, `server/`, kept until cutover):**
 - **Backend**: Node.js 18 + Express 4.18
-- **Database**: LowDB 1.0 (JSON file storage)
-- **Security**: HTTPS/TLS with official Nestlé certificates
-- **Container**: Podman/Docker compatible
-- **Monitoring**: Cron-based health checks with auto-restart
+- **Database**: LowDB 1.0 (JSON file: `data/pandora.json`)
+- **Container**: `crucible` image, managed by `container.sh`
 
 **Modules:**
 1. **ELN (Electronic Lab Notebook)**: Upload interface for all data types
 2. **Data Viewer**: Search, filter, and view all uploaded data
 3. **Dashboard**: Real-time statistics and capacity monitoring
 
-📚 **[View Architecture Details →](docs/architecture.md)**
+📚 **[View Architecture Details →](docs/architecture.md)** · **[Migration Guide →](MIGRATION.md)**
 
 ---
 
@@ -80,20 +103,25 @@ Access the application:
 
 ### Prerequisites
 
-- Node.js 18 or higher
-- npm 8 or higher
-- Podman or Docker (for containerized deployment)
+- Podman or Docker (for containerized deployment — covers everything else)
+- For bare-metal development only:
+  - Node.js 18+ and npm 8+ (client + legacy server)
+  - Python 3.12+ (new backend)
 - OpenSSL (for certificate verification)
-- Access to Nestlé certificate store (for HTTPS)
+- Access to Nestlé certificate store (for HTTPS on the legacy stack)
 
-### Install Dependencies
+### Install Dependencies (bare-metal development)
 
 ```bash
-# From project root directory
-cd /gpfs/home/rdkannanab/work/Pandora_toolbox/nr-nips-forrest-gump-pandora-enhancement
+# From the project root directory:
 
-# Install all dependencies (root, client, and server)
+# Node side (root, client, and legacy server)
 npm run install:all
+
+# Python backend
+cd backend
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
 ```
 
 ---
@@ -103,13 +131,23 @@ npm run install:all
 ### Local Development (Hot Reload)
 
 ```bash
-# Start both frontend and backend in development mode
+# Start frontend + legacy Node backend in development mode
 npm run dev
 ```
 
 This starts:
 - Frontend dev server: `http://localhost:3000`
 - Backend API server: `http://localhost:49160`
+
+**Developing against the Python backend instead:**
+
+```bash
+# Terminal 1 — FastAPI with auto-reload on a side port
+cd backend && .venv/bin/uvicorn app.main:app --reload --port 8000
+
+# Terminal 2 — point the Vite proxy at it (no file edits needed)
+cd client && VITE_API_PROXY_TARGET=http://localhost:8000 npm run dev
+```
 
 ### Build for Production
 
@@ -127,7 +165,17 @@ Production app runs at: `http://localhost:49160`
 
 ## 🧪 Testing
 
-### Run all tests
+### Python backend (45 parity tests)
+
+```bash
+cd backend
+.venv/bin/pytest                     # contract-parity tests vs the Express behaviour
+```
+
+Optionally run the **live dual-backend diff** (identical requests against both
+backends, responses compared) — see [backend/README.md](backend/README.md).
+
+### Legacy Node backend (70 tests)
 
 ```bash
 # From repo root (after running ./setup-after-clone.sh):
@@ -153,18 +201,33 @@ Tests cover (70 total, ~1s):
 
 ## 🐳 Container Deployment
 
-### Quick Deploy (with HTTPS)
+Both scripts auto-detect **podman or docker** (override with
+`CONTAINER_RUNTIME=docker|podman`) and check the podman VM state on macOS.
+
+### Python backend (new stack)
 
 ```bash
-# First-time setup after clone
+./container-py.sh build       # Build image (node build stage + python:3.12-slim)
+./container-py.sh start       # Start on port 49160
+./container-py.sh migrate     # lowdb → SQLite import (idempotent)
+./container-py.sh status      # Status + /api/stats healthcheck
+./container-py.sh logs        # View logs
+./container-py.sh stop        # Stop container
+./container-py.sh rebuild     # Rebuild image + restart
+./container-py.sh shell       # Shell inside the container
+./container-py.sh clean       # Remove container and image
+```
+
+### Legacy Node backend
+
+```bash
+# First-time setup after clone (HTTPS)
 ./setup-after-clone.sh
 
 # Or manual steps:
 ./container.sh build
 ./container.sh start-ssl
 ```
-
-### Container Management
 
 ```bash
 ./container.sh build       # Build container image
@@ -267,11 +330,13 @@ For bulk chemical uploads, prepare an Excel file with these columns:
 
 ## 🗄️ Database Schema
 
-The application uses LowDB (JSON-based) with the following collections:
-- `chemicals` - Chemical compounds data
-- `samples` - Sample information
-- `screening` - Screening assay results
-- `toxicology` - Toxicology study data
+Four collections/tables: `chemicals`, `samples`, `screening`, `toxicology`.
+
+- **Python backend**: SQLite (`data/crucible.db`) via SQLAlchemy — each table
+  stores the full record as a JSON `doc` column plus indexed lookup columns
+  (hybrid document pattern; PostgreSQL-ready via `DATABASE_URL`).
+- **Legacy Node backend**: LowDB JSON file (`data/pandora.json`) — also the
+  source for the one-shot migration script.
 
 📚 **[View Database Schema Details →](docs/database-schema.md)**
 
@@ -367,11 +432,12 @@ podman rm crucible
 ### Database Reset
 
 ```bash
-# Local: Delete data file
-rm -rf data/pandora.json
+# Python backend: delete the SQLite file (re-created empty on next start;
+# re-import from lowdb with ./container-py.sh migrate)
+rm -f data/crucible.db
 
-# Container: Remove volume
-podman volume rm pandora-data
+# Legacy Node backend: delete the lowdb JSON file
+rm -f data/pandora.json
 ```
 
 ---
@@ -412,11 +478,12 @@ The script covers: container, image, cron job, monitor logs, SSL certs, data, no
 ### Files Excluded from Git
 
 ```
-certs/          # SSL certificates and private keys
-data/           # Database with real data
-*.key, *.crt    # Any certificate files
-*.pem, *.cer    # Any certificate files
-.env            # Environment variables
+certs/             # SSL certificates and private keys
+data/*.db          # SQLite database (data/pandora.json IS tracked)
+server/data/       # bare-metal scratch data
+node_modules/      # dependencies (installed per machine)
+client/dist/       # build output
+backend/.venv/     # Python virtualenv
 ```
 
 ### Future Security Enhancements
@@ -440,10 +507,12 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 
 | Document | Description |
 |----------|-------------|
-| **[API Documentation](API.md)** | Complete REST API reference with HTTPS examples |
-| **[Deployment Guide](DEPLOYMENT.md)** | Deployment, SSL setup, and monitoring |
-| **[Architecture](docs/architecture.md)** | System architecture and design |
-| **[Database Schema](docs/database-schema.md)** | Database structure and relationships |
+| **[MIGRATION.md](MIGRATION.md)** | Node → Python migration: runbooks (macOS Docker/Podman, RHEL8), learning map, cutover & rollback |
+| **[Backend README](backend/README.md)** | Python backend: quickstart, tests, env vars, vite proxy switching |
+| **[API Documentation](API.md)** | Complete REST API reference (identical for both backends) |
+| **[Deployment Guide](DEPLOYMENT.md)** | Legacy Node deployment, SSL setup, and monitoring |
+| **[Architecture](docs/architecture.md)** | System architecture — Python backend + legacy Node sections |
+| **[Database Schema](docs/database-schema.md)** | SQL schema (Python) + LowDB collections (legacy) |
 | **[Contributing Guidelines](CONTRIBUTING.md)** | How to contribute |
 
 ---
