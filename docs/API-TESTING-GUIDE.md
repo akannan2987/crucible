@@ -44,7 +44,7 @@ You should see JSON output like:
 We have a ready-made Node.js script that runs multiple lookups:
 
 ```bash
-cd /gpfs/home/rdkannanab/work/Pandora_toolbox/nr-nips-forrest-gump-pandora-enhancement
+cd /path/to/crucible
 
 # Run the demo (NODE_TLS_REJECT_UNAUTHORIZED=0 is needed on our corporate network)
 NODE_TLS_REJECT_UNAUTHORIZED=0 node docs/api-demo.js
@@ -68,6 +68,35 @@ https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/caffeine/property/Molecu
 ```
 
 You'll see the JSON response right in the browser.
+
+---
+
+## Method 4: Using Python (`requests`)
+
+The same PubChem lookup from Python — useful as the starting point for your
+own scripts:
+
+```python
+import requests
+
+name = "caffeine"   # or a CAS number like "58-08-2"
+url = (
+    "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/"
+    f"{name}/property/IUPACName,MolecularFormula,MolecularWeight,CanonicalSMILES,InChIKey/JSON"
+)
+response = requests.get(url, timeout=30)
+props = response.json()["PropertyTable"]["Properties"][0]
+
+print(props["MolecularFormula"])   # C8H10N4O2
+print(props["MolecularWeight"])    # 194.19
+print(props["InChIKey"])           # RYYVLZVUVIJVGH-UHFFFAOYSA-N
+```
+
+> 📚 **For plain Crucible CRUD from Python** (create/read/update/delete
+> chemicals with `requests`, step by step, including error handling, bulk
+> operations and file uploads), see
+> [API.md → "Python (Requests) — step-by-step guide"](../API.md#python-requests--step-by-step-guide).
+> This guide only covers the PubChem-specific workflows.
 
 ---
 
@@ -113,9 +142,10 @@ This is the full workflow: fetch data from PubChem → insert into Pandora's dat
 ### One-command script
 
 ```bash
-cd /gpfs/home/rdkannanab/work/Pandora_toolbox/nr-nips-forrest-gump-pandora-enhancement
+cd /path/to/crucible
 
-# Add by compound name:
+# Add by compound name (targets http://localhost:49160 by default;
+# override with PANDORA_URL=http://nr-ubp-dev-02.nihs.ch.nestle.com:49160):
 ./docs/pubchem-to-pandora.sh caffeine
 
 # Add by CAS number:
@@ -162,31 +192,77 @@ Step 2: Posting to Crucible...
 
 ### Manual curl (without the script)
 
-If you want to do it manually in two steps:
+If you want to do it manually in two steps (use the VM hostname instead of
+`localhost` when targeting the deployed instance):
 
 ```bash
 # Step 1: Get data from PubChem
 curl -s "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/caffeine/property/IUPACName,MolecularFormula,MolecularWeight,CanonicalSMILES,InChIKey/JSON"
 
-# Step 2: POST to Pandora (fill in the values from step 1)
-curl -sk -X POST "https://nr-ubp-dev-02.nihs.ch.nestle.com:49160/api/chemicals" \
+# Step 2: POST to Crucible (fill in the values from step 1)
+curl -s -X POST "http://localhost:49160/api/chemicals" \
   -H "Content-Type: application/json" \
   -d '{
+    "chemical_id": "PUBCHEM-2519",
     "name": "caffeine",
     "cas_number": "58-08-2",
     "molecular_formula": "C8H10N4O2",
-    "molecular_weight": "194.19",
+    "molecular_weight": 194.19,
     "inchi_key": "RYYVLZVUVIJVGH-UHFFFAOYSA-N",
     "description": "1,3,7-trimethylpurine-2,6-dione",
     "metadata": {"pubchem_cid": 2519, "source": "PubChem"}
   }'
 ```
 
+### Python version (requests) — the whole flow in one script
+
+```python
+"""Fetch a compound from PubChem and insert it into Crucible."""
+import requests
+
+PANDORA = "http://localhost:49160/api"   # or the VM URL
+query = "vanillin"                        # name or CAS number
+
+# Step 1: fetch properties from PubChem
+pubchem_url = (
+    "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/"
+    f"{query}/property/IUPACName,MolecularFormula,MolecularWeight,CanonicalSMILES,InChIKey/JSON"
+)
+props = requests.get(pubchem_url, timeout=30).json()["PropertyTable"]["Properties"][0]
+
+# Step 2: build the Crucible record.
+# Tip: give it an explicit chemical_id (e.g. from the PubChem CID) — that is
+# what makes re-runs detectable as duplicates instead of silent extra rows.
+chemical = {
+    "chemical_id": f"PUBCHEM-{props['CID']}",
+    "name": query,
+    "molecular_formula": props.get("MolecularFormula"),
+    "molecular_weight": float(props.get("MolecularWeight", 0)) or None,
+    "smiles": props.get("CanonicalSMILES"),
+    "inchi_key": props.get("InChIKey"),
+    "description": props.get("IUPACName"),
+    "metadata": {"pubchem_cid": props["CID"], "source": "PubChem"},
+}
+
+# Step 3: POST it
+r = requests.post(f"{PANDORA}/chemicals", json=chemical)
+if r.status_code == 201:
+    print("Added:", r.json()["chemical_id"])
+elif r.status_code == 400:
+    print("Skipped:", r.json()["error"])      # e.g. already exists
+else:
+    r.raise_for_status()
+
+# Step 4: verify
+doc = requests.get(f"{PANDORA}/chemicals/PUBCHEM-{props['CID']}").json()
+print("In database:", doc["name"], "|", doc["molecular_formula"], "| MW", doc["molecular_weight"])
+```
+
 ### Verify it was added
 
 ```bash
-# List all chemicals in Pandora
-curl -sk "https://nr-ubp-dev-02.nihs.ch.nestle.com:49160/api/chemicals" | python3 -m json.tool
+# List chemicals (works the same against localhost or the VM)
+curl -s "http://localhost:49160/api/chemicals?search=vanillin" | python3 -m json.tool
 ```
 
 ### Pandora Chemical API Fields

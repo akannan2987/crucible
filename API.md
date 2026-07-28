@@ -1052,39 +1052,151 @@ const bulkDelete = async (ids) => {
 
 ---
 
-### Python (Requests)
+### Python (Requests) — step-by-step guide
+
+A complete walkthrough for scripting the chemicals API from Python. Every
+step shows the code, the real response, and what to check.
+
+#### Step 0 — One-time setup
+
+```bash
+pip install requests
+```
 
 ```python
 import requests
 
+# All endpoints live under this base URL.
 API_BASE = 'http://localhost:49160/api'
+# On the VM use: 'http://nr-ubp-dev-02.nihs.ch.nestle.com:49160/api'
+```
 
-# Get all chemicals
-response = requests.get(f'{API_BASE}/chemicals')
-chemicals = response.json()
-print(chemicals)
+#### Step 1 — CREATE a chemical (POST)
 
-# Add a chemical
-chemical = {
+You send a JSON body with at least `chemical_id` and `name`. Use the `json=`
+argument — requests converts your dict to JSON and sets the header for you.
+
+```python
+new_chemical = {
     'chemical_id': 'CHEM-001',
     'name': 'Caffeine',
-    'cas_number': '58-08-2'
+    'cas_number': '58-08-2',
+    'molecular_formula': 'C8H10N4O2',
+    'molecular_weight': 194.19,
 }
-response = requests.post(f'{API_BASE}/chemicals', json=chemical)
-print(response.json())
+response = requests.post(f'{API_BASE}/chemicals', json=new_chemical)
 
-# Upload Excel file
-with open('chemicals.xlsx', 'rb') as f:
-    files = {'file': f}
-    response = requests.post(f'{API_BASE}/chemicals/upload/excel', files=files)
-    print(response.json())
-
-# Bulk delete
-response = requests.post(f'{API_BASE}/chemicals/bulk/delete', json={
-    'chemical_ids': ['CHEM-001', 'CHEM-002']
-})
-print(response.json())
+print(response.status_code)   # 201  (201 = "Created")
+print(response.json())        # {'message': 'Chemical added successfully', 'chemical_id': 'CHEM-001'}
 ```
+
+If a chemical with that `chemical_id` already exists you get:
+
+```python
+print(response.status_code)   # 400
+print(response.json())        # {'error': 'Chemical ID already exists'}
+```
+
+#### Step 2 — READ chemicals (GET)
+
+**One record** — put the chemical_id in the URL path:
+
+```python
+response = requests.get(f'{API_BASE}/chemicals/CHEM-001')
+chemical = response.json()
+
+print(response.status_code)          # 200
+print(chemical['name'])              # Caffeine
+print(chemical['molecular_weight'])  # 194.19
+```
+
+An unknown id returns `404` with `{'error': 'Chemical not found'}`.
+
+**A list (paginated, searchable)** — filters go in `params=` (they become
+`?page=1&limit=10&search=caffeine` in the URL):
+
+```python
+response = requests.get(f'{API_BASE}/chemicals',
+                        params={'page': 1, 'limit': 10, 'search': 'caffeine'})
+body = response.json()
+
+print(body['pagination'])   # {'page': 1, 'limit': 10, 'total': 1, 'totalPages': 1}
+for chem in body['data']:   # the actual records are in body['data']
+    print(chem['chemical_id'], chem['name'])
+```
+
+#### Step 3 — UPDATE a chemical (PUT)
+
+Send **only the fields you want to change** — PUT merges them into the
+record, everything else is preserved:
+
+```python
+response = requests.put(f'{API_BASE}/chemicals/CHEM-001',
+                        json={'supplier': 'Sigma-Aldrich'})
+
+print(response.status_code)   # 200
+print(response.json())        # {'message': 'Chemical updated successfully'}
+
+# Verify: supplier changed, name untouched
+chemical = requests.get(f'{API_BASE}/chemicals/CHEM-001').json()
+print(chemical['supplier'])   # Sigma-Aldrich
+print(chemical['name'])       # Caffeine   (still there)
+```
+
+#### Step 4 — DELETE a chemical
+
+```python
+response = requests.delete(f'{API_BASE}/chemicals/CHEM-001')
+print(response.status_code)   # 200
+print(response.json())        # {'message': 'Chemical deleted successfully'}
+
+# It is really gone:
+response = requests.get(f'{API_BASE}/chemicals/CHEM-001')
+print(response.status_code)   # 404
+print(response.json())        # {'error': 'Chemical not found'}
+```
+
+#### Step 5 — Handle errors properly (recommended for real scripts)
+
+Every failure returns `{'error': 'message'}` with a 4xx/5xx status, so one
+helper covers all verbs:
+
+```python
+def api_call(method: str, path: str, **kwargs):
+    """Call the API; return parsed JSON or raise with the server's message."""
+    response = requests.request(method, f'{API_BASE}{path}', timeout=30, **kwargs)
+    payload = response.json()
+    if not response.ok:                # True for status codes >= 400
+        raise RuntimeError(f'{method} {path} -> {response.status_code}: {payload.get("error")}')
+    return payload
+
+# Usage:
+api_call('POST',   '/chemicals', json={'chemical_id': 'CHEM-002', 'name': 'Aspirin'})
+api_call('GET',    '/chemicals/CHEM-002')
+api_call('PUT',    '/chemicals/CHEM-002', json={'supplier': 'Bayer'})
+api_call('DELETE', '/chemicals/CHEM-002')
+```
+
+#### Step 6 — Bulk operations and file uploads
+
+```python
+# Bulk delete / bulk update take a JSON body with a list of ids
+requests.post(f'{API_BASE}/chemicals/bulk/delete',
+              json={'chemical_ids': ['CHEM-001', 'CHEM-002']})
+
+requests.post(f'{API_BASE}/chemicals/bulk/update',
+              json={'chemical_ids': ['CHEM-003'], 'updates': {'supplier': 'Merck'}})
+
+# File uploads use files= (multipart), NOT json=
+with open('chemicals.xlsx', 'rb') as f:
+    response = requests.post(f'{API_BASE}/chemicals/upload/excel', files={'file': f})
+    print(response.json())   # {'message': 'Successfully processed ...', 'inserted': ..., 'updated': ...}
+```
+
+> 💡 The same patterns work for `/samples`, `/screening`, and `/toxicology` —
+> only the paths and field names differ (see their sections above). You can
+> also explore and test every endpoint interactively in a browser at
+> `http://localhost:49160/docs` (FastAPI's auto-generated API console).
 
 ---
 
