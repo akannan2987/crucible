@@ -179,7 +179,7 @@ npm run dev
 ./container.sh start-ssl
 
 # Verify HTTPS endpoint responds
-curl --noproxy '*' -k -s https://localhost:5942/api/stats
+curl --noproxy '*' -k -s https://localhost:49160/api/stats
 # ✅ Should return JSON with chemicals/samples/screening/toxicology counts
 
 # Check container logs for errors
@@ -278,10 +278,10 @@ podman rm crucible
 ./container.sh start-ssl
 
 # Verify it's working
-curl --noproxy '*' -k -s https://localhost:5942/api/stats
+curl --noproxy '*' -k -s https://localhost:49160/api/stats
 
 # Check application in browser
-# https://nr-ubp-dev-02.nihs.ch.nestle.com:5942
+# https://nr-ubp-dev-02.nihs.ch.nestle.com:49160
 ```
 
 ### 🛑 Quick Reference — DO NOT Push If:
@@ -292,7 +292,7 @@ curl --noproxy '*' -k -s https://localhost:5942/api/stats
 | No data files staged | `git diff --cached --name-only \| grep 'data/'` | Empty output |
 | Build succeeds | `npm run build` | No errors |
 | Container starts | `./container.sh build && ./container.sh start-ssl` | "Image built successfully" |
-| API responds | `curl -k -s https://localhost:5942/api/stats` | Valid JSON |
+| API responds | `curl -k -s https://localhost:49160/api/stats` | Valid JSON |
 | No debug code | `grep -rn 'console.log' client/src/ server/src/` | Review & remove |
 | .gitignore intact | `cat .gitignore \| grep certs` | `certs/` present |
 
@@ -655,7 +655,7 @@ npm run build
 ./container.sh logs
 
 # Test HTTPS endpoint
-curl --noproxy '*' -k -s https://localhost:5942/api/stats
+curl --noproxy '*' -k -s https://localhost:49160/api/stats
 ```
 
 ---

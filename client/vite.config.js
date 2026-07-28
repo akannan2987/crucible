@@ -6,7 +6,11 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:5942',
+        // Dev-only proxy: forwards /api requests from the Vite dev server to
+        // the backend. Override with VITE_API_PROXY_TARGET to point at a
+        // different backend without editing this file, e.g.:
+        //   VITE_API_PROXY_TARGET=http://localhost:8000 npm run dev
+        target: process.env.VITE_API_PROXY_TARGET || 'http://localhost:49160',
         changeOrigin: true
       }
     }

@@ -131,7 +131,7 @@ cd /gpfs/home/rdkannanab/work/Pandora_toolbox/nr-nips-forrest-gump-pandora-enhan
 |------|--------|---------|
 | 1 | Fetch from PubChem | `curl -s "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{NAME}/property/IUPACName,MolecularFormula,MolecularWeight,CanonicalSMILES,InChIKey/JSON"` |
 | 2 | Parse JSON response | Extracts formula, MW, SMILES, InChIKey, IUPAC name using `python3` |
-| 3 | POST to Pandora | `curl -sk -X POST "https://nr-ubp-dev-02.nihs.ch.nestle.com:5942/api/chemicals" -H "Content-Type: application/json" -d '{...}'` |
+| 3 | POST to Pandora | `curl -sk -X POST "https://nr-ubp-dev-02.nihs.ch.nestle.com:49160/api/chemicals" -H "Content-Type: application/json" -d '{...}'` |
 
 ### Example: Adding Caffeine
 
@@ -169,7 +169,7 @@ If you want to do it manually in two steps:
 curl -s "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/caffeine/property/IUPACName,MolecularFormula,MolecularWeight,CanonicalSMILES,InChIKey/JSON"
 
 # Step 2: POST to Pandora (fill in the values from step 1)
-curl -sk -X POST "https://nr-ubp-dev-02.nihs.ch.nestle.com:5942/api/chemicals" \
+curl -sk -X POST "https://nr-ubp-dev-02.nihs.ch.nestle.com:49160/api/chemicals" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "caffeine",
@@ -186,7 +186,7 @@ curl -sk -X POST "https://nr-ubp-dev-02.nihs.ch.nestle.com:5942/api/chemicals" \
 
 ```bash
 # List all chemicals in Pandora
-curl -sk "https://nr-ubp-dev-02.nihs.ch.nestle.com:5942/api/chemicals" | python3 -m json.tool
+curl -sk "https://nr-ubp-dev-02.nihs.ch.nestle.com:49160/api/chemicals" | python3 -m json.tool
 ```
 
 ### Pandora Chemical API Fields

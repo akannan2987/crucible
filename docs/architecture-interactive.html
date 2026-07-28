@@ -152,7 +152,7 @@
         <li class="flex justify-between"><span>🔬 Screening records</span><b>~50,000</b></li>
         <li class="flex justify-between"><span>☣️ Toxicology records</span><b>~50,000</b></li>
         <li class="flex justify-between"><span>👥 Concurrent users</span><b>50 – 100</b></li>
-        <li class="flex justify-between"><span>🚪 Hosted on port</span><b>5942</b></li>
+        <li class="flex justify-between"><span>🚪 Hosted on port</span><b>49160</b></li>
       </ul>
     </div>
   </div>
@@ -290,7 +290,7 @@
             <circle cx="4" cy="-2" r="1.2" fill="#fff"/>
             <ellipse cx="0" cy="1" rx="2.5" ry="1.5" fill="#d4a0e0"/>
           </g>
-          <text x="614" y="195" fill="#c4b5fd" font-size="11"> Podman Container · port 5942 · HTTPS</text>
+          <text x="614" y="195" fill="#c4b5fd" font-size="11"> Podman Container · port 49160 · HTTPS</text>
         </g>
 
         <!-- ===== Connecting paths (boxes: User 60-200/55-145 ; React 290-430/220-310 ; Express 620-790/220-310 ; LowDB 430-590/390-490) ===== -->
@@ -472,7 +472,7 @@
           <div class="flex-1">
             <p class="text-xs uppercase tracking-wider text-violet-300">Layer 2 · API Gateway (Server Routes)</p>
             <h4 class="font-semibold text-lg">The traffic controller &amp; request dispatcher</h4>
-            <p class="text-slate-300 text-sm">An <b>Express.js</b> HTTP server exposing RESTful endpoints over HTTPS on port 5942. Each route maps to a specific resource and operation.</p>
+            <p class="text-slate-300 text-sm">An <b>Express.js</b> HTTP server exposing RESTful endpoints over HTTPS on port 49160. Each route maps to a specific resource and operation.</p>
             <ul class="text-slate-400 text-xs mt-2 space-y-1 list-disc pl-5">
               <li><code>GET/POST/PUT/DELETE /api/chemicals</code> — CRUD operations for chemical records.</li>
               <li><code>POST /api/chemicals/upload/excel</code> — bulk import from Excel via Multer + XLSX.</li>
@@ -1013,7 +1013,7 @@
         <!-- Container -->
         <g>
           <rect x="130" y="120" width="540" height="260" rx="18" fill="#1e293b" stroke="#a78bfa" stroke-width="2" stroke-dasharray="6 4"/>
-          <text x="155" y="145" fill="#c4b5fd" font-size="13" font-weight="700">📦 Podman Container · port 5942</text>
+          <text x="155" y="145" fill="#c4b5fd" font-size="13" font-weight="700">📦 Podman Container · port 49160</text>
 
           <!-- Express -->
           <rect x="160" y="170" width="220" height="80" rx="12" fill="#3b0764" stroke="#a78bfa" stroke-width="1.5"/>
@@ -1133,7 +1133,7 @@
             'parse Excel/SDF uploads (XLSX & Multer), apply business rules (unique IDs, capacity limits), ' +
             'and talk to the database. It can also call external APIs like PubChem to auto-fill chemical ' +
             'properties (formula, MW, SMILES, InChIKey) from a CAS number or compound name. ' +
-            'It also serves the compiled React app to the browser on port 5942.'
+            'It also serves the compiled React app to the browser on port 49160.'
     },
     db: {
       title: '🗄️ LowDB — The single-file database',

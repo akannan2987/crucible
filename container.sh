@@ -5,8 +5,23 @@
 
 IMAGE_NAME="crucible"
 CONTAINER_NAME="crucible"
-PORT=5942
-HTTPS_PORT=5943
+# Ports are env-overridable; defaults match the Dockerfile (PORT=49160).
+PORT="${PORT:-49160}"
+HTTPS_PORT="${HTTPS_PORT:-5943}"
+
+# Host interface for published ports (override with HOST_BIND=<ip>).
+# Linux (RHEL8 VM): 0.0.0.0 so the app is reachable from other machines.
+# macOS: Apple's remoted daemon already listens on ports 49152+ on a
+# link-local IPv6 address, which makes podman's wildcard bind of 49160
+# fail with "address already in use" — 127.0.0.1 avoids that and is all
+# local development needs.
+if [ -z "$HOST_BIND" ]; then
+    if [ "$(uname -s)" = "Darwin" ]; then
+        HOST_BIND="127.0.0.1"
+    else
+        HOST_BIND="0.0.0.0"
+    fi
+fi
 DATA_DIR="$(pwd)/data"
 CERTS_DIR="$(pwd)/certs"
 USE_HTTPS="${USE_HTTPS:-false}"
@@ -74,7 +89,7 @@ start_container() {
         # reflect host-side edits immediately — no rebuild needed.
         VOLUMES="-v ${DATA_DIR}:/app/server/data:Z -v $(pwd)/docs:/app/docs:Z,ro"
         ENV_VARS="-e PORT=${PORT} -e USE_HTTPS=false"
-        PORTS="-p ${PORT}:${PORT}"
+        PORTS="-p ${HOST_BIND}:${PORT}:${PORT}"
         
         podman run -d \
             --name ${CONTAINER_NAME} \
@@ -89,8 +104,8 @@ start_container() {
         echo -e "${GREEN}✓ Container started successfully${NC}"
         echo ""
         echo "Access the application at:"
-        echo "  http://nr-ubp-dev-02.nihs.ch.nestle.com:${PORT}"
         echo "  http://localhost:${PORT}"
+        echo "  http://$(hostname):${PORT}   (from another machine)"
     else
         echo -e "${RED}✗ Failed to start container${NC}"
         exit 1
@@ -123,8 +138,8 @@ start_container_ssl() {
     
     podman run -d \
         --name ${CONTAINER_NAME} \
-        -p ${PORT}:${PORT} \
-        -p ${HTTPS_PORT}:${HTTPS_PORT} \
+        -p ${HOST_BIND}:${PORT}:${PORT} \
+        -p ${HOST_BIND}:${HTTPS_PORT}:${HTTPS_PORT} \
         -v ${DATA_DIR}:/app/server/data:Z \
         -v ${CERTS_DIR}:/app/certs:Z,ro \
         -v $(pwd)/docs:/app/docs:Z,ro \
@@ -135,13 +150,13 @@ start_container_ssl() {
         -e SSL_KEY_PATH=/app/certs/server.key \
         --restart unless-stopped \
         ${IMAGE_NAME}:latest
-    
+
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}✓ Container started with HTTPS${NC}"
         echo ""
         echo -e "${BLUE}🔒 Access the application at:${NC}"
-        echo "  https://nr-ubp-dev-02.nihs.ch.nestle.com:${PORT}"
         echo "  https://localhost:${PORT}"
+        echo "  https://$(hostname):${PORT}   (from another machine)"
         echo ""
         echo -e "${YELLOW}Note: If using self-signed certificate, browser will show a warning.${NC}"
         echo "Click 'Advanced' → 'Proceed' to continue."
@@ -182,8 +197,8 @@ start_container_dev() {
     # CHOKIDAR_USEPOLLING + --legacy-watch is required for bind-mounts over GPFS.
     podman run -d \
         --name ${CONTAINER_NAME} \
-        -p ${PORT}:${PORT} \
-        -p ${HTTPS_PORT}:${HTTPS_PORT} \
+        -p ${HOST_BIND}:${PORT}:${PORT} \
+        -p ${HOST_BIND}:${HTTPS_PORT}:${HTTPS_PORT} \
         -v ${DATA_DIR}:/app/server/data:Z \
         -v ${CERTS_DIR}:/app/certs:Z,ro \
         -v $(pwd)/docs:/app/docs:Z,ro \
@@ -210,12 +225,12 @@ start_container_dev() {
         echo "  • client/dist/       → rebuild with 'cd client && npm run build' (or watch mode)"
         echo ""
         echo -e "${YELLOW}💡 For client HMR run in a separate terminal:${NC}"
-        echo "  cd client && npm run dev       # Vite on http://localhost:3000 (proxies /api to 5942)"
+        echo "  cd client && npm run dev       # Vite on http://localhost:3000 (proxies /api to ${PORT})"
         echo ""
         echo -e "${YELLOW}💡 Or for a watched production-style build:${NC}"
         echo "  cd client && npx vite build --watch"
         echo ""
-        echo -e "${BLUE}🔒 App URL:${NC} https://nr-ubp-dev-02.nihs.ch.nestle.com:${PORT}"
+        echo -e "${BLUE}🔒 App URL:${NC} https://$(hostname):${PORT}  (or https://localhost:${PORT})"
         echo -e "${BLUE}📜 Logs:${NC}    ./container.sh logs"
     else
         echo -e "${RED}✗ Failed to start container in dev mode${NC}"
@@ -228,9 +243,11 @@ setup_ssl() {
     echo ""
     
     mkdir -p ${CERTS_DIR}
-    
-    DOMAIN="nr-ubp-dev-02.nihs.ch.nestle.com"
-    
+
+    # Certificate CN defaults to this machine's FQDN; override with
+    # SSL_DOMAIN=my.host.name ./container.sh setup-ssl
+    DOMAIN="${SSL_DOMAIN:-$(hostname -f 2>/dev/null || hostname)}"
+
     echo "Generating self-signed SSL certificate for ${DOMAIN}..."
     
     openssl req -x509 -nodes -days 365 -newkey rsa:2048 \

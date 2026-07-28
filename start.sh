@@ -27,14 +27,15 @@ if [ ! -d "client/dist" ]; then
     npm run build
 fi
 
-# Set environment variables
-export PORT=5942
+# Set environment variables (env-overridable; default matches the Dockerfile)
+export PORT="${PORT:-49160}"
 
 # Start the server
 echo ""
 echo "🚀 Starting Crucible: Pandora Toolbox Enhancement (v2.0)..."
 echo "   Access the application at:"
-echo "   https://nr-ubp-dev-02.nihs.ch.nestle.com:5942"
+echo "   http://localhost:${PORT}"
+echo "   http://$(hostname):${PORT}   (from another machine)"
 echo ""
 
 cd server && npm start

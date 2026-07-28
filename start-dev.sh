@@ -20,13 +20,13 @@ if [ ! -d "node_modules" ] || [ ! -d "client/node_modules" ] || [ ! -d "server/n
     npm run install:all
 fi
 
-# Set environment variables
-export PORT=5942
+# Set environment variables (env-overridable; default matches the Dockerfile)
+export PORT="${PORT:-49160}"
 
 echo ""
 echo "🚀 Starting development servers..."
-echo "   Frontend: http://localhost:5173"
-echo "   Backend:  http://localhost:5942"
+echo "   Frontend: http://localhost:3000   (Vite dev server, see client/package.json)"
+echo "   Backend:  http://localhost:${PORT}"
 echo ""
 
 npm run dev

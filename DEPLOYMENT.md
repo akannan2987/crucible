@@ -7,6 +7,7 @@ Comprehensive guide for deploying Crucible in different environments.
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
+- [Port Migration: 5942 → 49160 (RHEL8 VM)](#port-migration-5942--49160-rhel8-vm)
 - [Quick Start (After Clone)](#quick-start-after-clone)
 - [SSL/TLS Certificate Setup](#ssltls-certificate-setup)
 - [Local Development Deployment](#local-development-deployment)
@@ -19,6 +20,54 @@ Comprehensive guide for deploying Crucible in different environments.
 - [Backup and Restore](#backup-and-restore)
 - [Troubleshooting](#troubleshooting)
 - [Security](#security)
+
+---
+
+## Port Migration: 5942 → 49160 (RHEL8 VM)
+
+The application moved from port **5942** to **49160**. On the RHEL8 VM
+(`nr-ubp-dev-02.nihs.ch.nestle.com`) run the following, in order, to pick up
+the change. These commands are complete — no other manual steps are needed.
+
+```bash
+# 1. Get the new code
+cd /path/to/crucible          # wherever the repo is checked out on the VM
+git pull
+
+# 2. Stop and remove the old container (old name was pandora-toolbox;
+#    both commands are safe to run even if that container does not exist)
+podman stop pandora-toolbox crucible 2>/dev/null
+podman rm   pandora-toolbox crucible 2>/dev/null
+
+# 3. Rebuild the image with the new port baked in
+./container.sh build
+
+# 4. Open the new port in firewalld and close the old one
+sudo firewall-cmd --permanent --add-port=49160/tcp
+sudo firewall-cmd --permanent --remove-port=5942/tcp   # ok if it reports "not enabled"
+sudo firewall-cmd --reload
+sudo firewall-cmd --list-ports                          # verify 49160/tcp is listed
+
+# 5. Start and verify
+./container.sh start
+curl --noproxy '*' -s http://localhost:49160/api/stats   # expect JSON stats
+```
+
+The app is then reachable at `http://nr-ubp-dev-02.nihs.ch.nestle.com:49160`.
+
+Notes:
+
+- Nothing is hardcoded to a hostname or platform: the server reads the
+  `PORT` env var (default 49160) and binds `0.0.0.0`, so the same image runs
+  unmodified on macOS and RHEL8. The scripts accept `PORT=<n>` overrides.
+- If a cron entry runs `monitor.sh`, it now defaults to checking
+  `http://localhost:49160/api/stats` — no change needed unless you deployed
+  with SSL, in which case set `API_URL=https://localhost:49160/api/stats`.
+- Rootless podman cannot bind ports below 1024; 49160 is unaffected.
+- macOS quirk: Apple's `remoted` daemon listens on ports 49152+ on a
+  link-local IPv6 address, so a wildcard bind of 49160 fails on Macs.
+  `container.sh` therefore publishes ports on `127.0.0.1` on macOS (fine
+  for local dev) and `0.0.0.0` on Linux; override with `HOST_BIND=<ip>`.
 
 ---
 
@@ -42,7 +91,7 @@ Comprehensive guide for deploying Crucible in different environments.
 
 ### Network Requirements
 
-- **Port 5942**: Must be available and not blocked by firewall (HTTPS)
+- **Port 49160**: Must be available and not blocked by firewall (HTTPS)
 - **Outbound internet**: Required for npm package installation
 
 ### Certificate Requirements (for HTTPS)
@@ -78,7 +127,7 @@ The `setup-after-clone.sh` script automatically:
 3. ✅ Installs npm dependencies (root, client, server) **including devDependencies** so `npm test` works
 4. ✅ Creates the `data/` directory for database storage
 5. ✅ Builds the container image
-6. ✅ Starts the application with HTTPS on port 5942
+6. ✅ Starts the application with HTTPS on port 49160
 7. ✅ Optionally installs health monitoring cron job
 
 ### Live-mounted directories
@@ -115,7 +164,7 @@ Additional bind-mounts active in dev mode:
 # Terminal 1 — start container in dev mode (HTTPS, nodemon)
 ./container.sh start-dev
 
-# Terminal 2 — option A: full Vite HMR (browser preview at :3000, /api proxied to :5942)
+# Terminal 2 — option A: full Vite HMR (browser preview at :3000, /api proxied to :49160)
 cd client && npm run dev
 
 # Terminal 2 — option B: production-style watched build (writes to client/dist/)
@@ -128,7 +177,7 @@ Notes:
 - The image now bakes `nodemon@3` globally (~3 MB overhead) so `start-dev` works without any host install.
 
 After setup, access the application at:
-- **HTTPS**: `https://nr-ubp-dev-02.nihs.ch.nestle.com:5942`
+- **HTTPS**: `https://nr-ubp-dev-02.nihs.ch.nestle.com:49160`
 
 ---
 
@@ -232,13 +281,13 @@ npm run dev
 
 This starts:
 - **Frontend**: `http://localhost:3000` (Vite dev server with hot reload)
-- **Backend API**: `http://localhost:5942` (Express server with nodemon)
+- **Backend API**: `http://localhost:49160` (Express server with nodemon)
 
 ### Step 4: Access Application
 
 Open your browser and navigate to:
 - Frontend: `http://localhost:3000`
-- API: `http://localhost:5942/api/stats`
+- API: `http://localhost:49160/api/stats`
 
 ### Development Features
 
@@ -270,7 +319,7 @@ This creates:
 
 ```bash
 # Set port and start server
-PORT=5942 npm start
+PORT=49160 npm start
 ```
 
 Or create a start script:
@@ -279,7 +328,7 @@ Or create a start script:
 #!/bin/bash
 # start-prod.sh
 
-export PORT=5942
+export PORT=49160
 export NODE_ENV=production
 
 cd /gpfs/home/rdkannanab/work/Pandora_toolbox/nr-nips-forrest-gump-pandora-enhancement
@@ -292,11 +341,11 @@ Use `nohup` or `screen`:
 
 ```bash
 # Using nohup
-nohup PORT=5942 npm start > pandora.log 2>&1 &
+nohup PORT=49160 npm start > pandora.log 2>&1 &
 
 # Or using screen
 screen -S pandora
-PORT=5942 npm start
+PORT=49160 npm start
 # Press Ctrl+A, then D to detach
 ```
 
@@ -330,7 +379,7 @@ podman build -t crucible:latest .
 # Create and run container
 podman run -d \
   --name crucible \
-  -p 5942:5942 \
+  -p 49160:49160 \
   -v pandora-data:/app/server/data \
   --restart unless-stopped \
   crucible:latest
@@ -346,7 +395,7 @@ docker build -t crucible:latest .
 
 docker run -d \
   --name crucible \
-  -p 5942:5942 \
+  -p 49160:49160 \
   -v pandora-data:/app/server/data \
   --restart unless-stopped \
   crucible:latest
@@ -402,7 +451,7 @@ chmod 600 certs/server.key
 ```
 
 This starts the container with:
-- HTTPS on port **5942**
+- HTTPS on port **49160**
 - Certificate/key mounted as read-only volumes
 - Data directory for persistent database storage
 - Automatic restart on failure
@@ -414,10 +463,10 @@ This starts the container with:
 ./container.sh status
 
 # Test HTTPS endpoint
-curl --noproxy '*' -k -s https://localhost:5942/api/stats
+curl --noproxy '*' -k -s https://localhost:49160/api/stats
 
 # Test from hostname
-curl --noproxy '*' -k -s https://nr-ubp-dev-02.nihs.ch.nestle.com:5942/api/stats
+curl --noproxy '*' -k -s https://nr-ubp-dev-02.nihs.ch.nestle.com:49160/api/stats
 ```
 
 ### Container Configuration
@@ -430,8 +479,8 @@ WORKDIR /app
 COPY . .
 # Install server dependencies, build client
 # Create data and certs directories
-ENV NODE_ENV=production PORT=5942 USE_HTTPS=false
-EXPOSE 5942
+ENV NODE_ENV=production PORT=49160 USE_HTTPS=false
+EXPOSE 49160
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 ...
 CMD ["node", "src/index.js"]
 ```
@@ -441,7 +490,7 @@ CMD ["node", "src/index.js"]
 - `/app/certs` → `./certs/` (SSL certificates, read-only)
 
 **Environment variables set by `start-ssl`:**
-- `PORT=5942`
+- `PORT=49160`
 - `USE_HTTPS=true`
 - `SSL_CERT_PATH=/app/certs/server.crt`
 - `SSL_KEY_PATH=/app/certs/server.key`
@@ -489,24 +538,24 @@ podman rm crucible
 
 # Verify deployment
 ./container.sh status
-curl --noproxy '*' -k -s https://localhost:5942/api/stats
+curl --noproxy '*' -k -s https://localhost:49160/api/stats
 ```
 
 ### Access URLs
 
-- **HTTPS (Production)**: `https://nr-ubp-dev-02.nihs.ch.nestle.com:5942`
-- **Local test**: `https://localhost:5942`
+- **HTTPS (Production)**: `https://nr-ubp-dev-02.nihs.ch.nestle.com:49160`
+- **Local test**: `https://localhost:49160`
 
 ### Firewall Configuration
 
-Ensure port 5942 is open:
+Ensure port 49160 is open:
 
 ```bash
 # Check if port is listening
-ss -tlnp | grep 5942
+ss -tlnp | grep 49160
 
 # Open firewall port (if needed)
-sudo firewall-cmd --add-port=5942/tcp --permanent
+sudo firewall-cmd --add-port=49160/tcp --permanent
 sudo firewall-cmd --reload
 ```
 
@@ -552,7 +601,7 @@ sudo systemctl status crucible
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PORT` | 5942 | Server port (HTTP and HTTPS) |
+| `PORT` | 49160 | Server port (HTTP and HTTPS) |
 | `NODE_ENV` | production | Environment mode |
 | `USE_HTTPS` | false | Enable HTTPS mode |
 | `SSL_CERT_PATH` | /app/certs/server.crt | Path to SSL certificate |
@@ -566,12 +615,12 @@ sudo systemctl status crucible
 ```bash
 podman run -d \
   --name crucible \
-  -e PORT=5942 \
+  -e PORT=49160 \
   -e NODE_ENV=production \
   -e USE_HTTPS=true \
   -e SSL_CERT_PATH=/app/certs/server.crt \
   -e SSL_KEY_PATH=/app/certs/server.key \
-  -p 5942:5942 \
+  -p 49160:49160 \
   -v ./certs:/app/certs:Z,ro \
   -v ./data:/app/server/data:Z \
   crucible:latest
@@ -580,7 +629,7 @@ podman run -d \
 **Local:**
 
 ```bash
-PORT=5942 USE_HTTPS=true npm start
+PORT=49160 USE_HTTPS=true npm start
 ```
 
 ---
@@ -618,7 +667,7 @@ crontab -l | grep pandora
 ### Monitor Script Details
 
 The `monitor.sh` script:
-1. Sends a GET request to `https://localhost:5942/api/stats`
+1. Sends a GET request to `https://localhost:49160/api/stats`
 2. If response is HTTP 200 → logs "healthy"
 3. If response fails → restarts the container and logs the action
 4. All activity logged to `/tmp/pandora-monitor.log`
@@ -643,7 +692,7 @@ grep -i "restart\|unhealthy\|failed" /tmp/pandora-monitor.log
 ./monitor.sh
 
 # Or test API directly
-curl --noproxy '*' -k -s https://localhost:5942/api/stats
+curl --noproxy '*' -k -s https://localhost:49160/api/stats
 ```
 
 ### Server Stability Configuration
@@ -784,7 +833,7 @@ podman logs --tail 50 crucible
 ./monitor.sh
 
 # Test API locally
-curl --noproxy '*' -k -s https://localhost:5942/api/stats
+curl --noproxy '*' -k -s https://localhost:49160/api/stats
 ```
 
 **Fix:**
@@ -796,20 +845,20 @@ podman rm crucible
 
 # Verify it's working
 sleep 5
-curl --noproxy '*' -k -s https://localhost:5942/api/stats
+curl --noproxy '*' -k -s https://localhost:49160/api/stats
 ```
 
 ### Port Already in Use
 
 ```bash
-# Find process using port 5942
-lsof -i :5942
+# Find process using port 49160
+lsof -i :49160
 
 # Kill the process
 kill -9 <PID>
 
 # Or kill by port
-fuser -k 5942/tcp
+fuser -k 49160/tcp
 ```
 
 ### Container Won't Start
@@ -860,11 +909,11 @@ cp backups/pandora-latest.json data/pandora.json
 sudo firewall-cmd --list-ports
 
 # Add port if missing
-sudo firewall-cmd --add-port=5942/tcp --permanent
+sudo firewall-cmd --add-port=49160/tcp --permanent
 sudo firewall-cmd --reload
 
 # Check if service is listening
-ss -tlnp | grep 5942
+ss -tlnp | grep 49160
 ```
 
 ### Performance Issues
@@ -930,7 +979,7 @@ data/           # Database with real data
 
 ### Network Security
 
-- HTTPS on port 5942 (encrypted)
+- HTTPS on port 49160 (encrypted)
 - No HTTP redirect server (prevents mixed content issues)
 - CORS configured for specific origins
 - Input validation on all API endpoints
@@ -1130,10 +1179,10 @@ For high availability, deploy multiple instances:
 
 ```bash
 # Instance 1
-podman run -d --name crucible-1 -p 5942:5942 ...
+podman run -d --name crucible-1 -p 49160:49160 ...
 
 # Instance 2
-podman run -d --name crucible-2 -p 5944:5942 ...
+podman run -d --name crucible-2 -p 5944:49160 ...
 
 # Use load balancer (nginx) to distribute traffic
 ```
@@ -1147,7 +1196,7 @@ podman run -d \
   --name crucible \
   --cpus 4 \
   --memory 4g \
-  -p 5942:5942 \
+  -p 49160:49160 \
   crucible:latest
 ```
 
@@ -1159,7 +1208,7 @@ Complete list of all environment variables used by Crucible:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PORT` | `5942` | Application port (HTTP or HTTPS depending on `USE_HTTPS`) |
+| `PORT` | `49160` | Application port (HTTP or HTTPS depending on `USE_HTTPS`) |
 | `USE_HTTPS` | `false` | Set to `true` to enable TLS. Requires valid cert/key files. |
 | `SSL_CERT_PATH` | `/app/certs/server.crt` | Path to SSL certificate file |
 | `SSL_KEY_PATH` | `/app/certs/server.key` | Path to SSL private key file |

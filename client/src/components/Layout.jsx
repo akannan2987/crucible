@@ -268,8 +268,10 @@ export default function Layout() {
               Chemical & Sample Management
             </h1>
             <div className="flex items-center space-x-4">
+              {/* Port is read from the browser's own URL instead of being
+                  hardcoded, so this stays correct on any host/port */}
               <span className="text-sm text-gray-500">
-                Running on port 5942
+                Running on port {window.location.port || (window.location.protocol === 'https:' ? '443' : '80')}
               </span>
             </div>
           </div>

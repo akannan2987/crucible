@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const https = require('https');
 const http = require('http');
+const os = require('os');
 const { initDB } = require('./database');
 const chemicalsRouter = require('./routes/chemicals');
 const samplesRouter = require('./routes/samples');
@@ -12,7 +13,7 @@ const toxicologyRouter = require('./routes/toxicology');
 const statsRouter = require('./routes/stats');
 
 const app = express();
-const PORT = process.env.PORT || 5942;
+const PORT = process.env.PORT || 49160;
 const HTTPS_PORT = process.env.HTTPS_PORT || 5943;
 const USE_HTTPS = process.env.USE_HTTPS === 'true';
 
@@ -103,17 +104,14 @@ async function startServer() {
         server.timeout = 120000;
 
         server.listen(PORT, '0.0.0.0', () => {
-          console.log(`
-  ╔═══════════════════════════════════════════════════════════╗
-  ║                                                           ║
-  ║   🧪 Crucible: Pandora Toolbox Enhancement (v2.0)         ║
-  ║      Chemical & Sample Management                         ║
-  ║                                                           ║
-  ║   🔒 HTTPS Server running on port ${PORT}                  ║
-  ║   https://nr-ubp-dev-02.nihs.ch.nestle.com:${PORT}          ║
-  ║                                                           ║
-  ╚═══════════════════════════════════════════════════════════╝
-          `);
+          printBanner([
+            '🧪 Crucible: Pandora Toolbox Enhancement (v2.0)',
+            '   Chemical & Sample Management',
+            '',
+            `🔒 HTTPS server running on port ${PORT}`,
+            `https://localhost:${PORT}`,
+            `https://${os.hostname()}:${PORT}`,
+          ]);
         });
 
       } else {
@@ -130,21 +128,30 @@ async function startServer() {
   }
 }
 
+// Print the startup banner. The hostname comes from os.hostname() at
+// runtime instead of being hardcoded, so the same code works on any
+// machine (macOS laptop or the RHEL8 VM). padEnd keeps the box aligned
+// for any port/hostname length.
+function printBanner(lines) {
+  const width = 59; // inner width of the box
+  const border = '═'.repeat(width);
+  const empty = `  ║${' '.repeat(width)}║`;
+  const body = lines.map((line) => `  ║${`   ${line}`.padEnd(width)}║`);
+  console.log(['', `  ╔${border}╗`, empty, ...body, empty, `  ╚${border}╝`, ''].join('\n'));
+}
+
 function startHttpServer() {
   const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`
-  ╔═══════════════════════════════════════════════════════════╗
-  ║                                                           ║
-  ║   🧪 Crucible: Pandora Toolbox Enhancement (v2.0)         ║
-  ║      Chemical & Sample Management                         ║
-  ║                                                           ║
-  ║   Server running on port ${PORT}                           ║
-  ║   http://nr-ubp-dev-02.nihs.ch.nestle.com:${PORT}           ║
-  ║                                                           ║
-  ║   💡 To enable HTTPS, set USE_HTTPS=true                  ║
-  ║                                                           ║
-  ╚═══════════════════════════════════════════════════════════╝
-    `);
+    printBanner([
+      '🧪 Crucible: Pandora Toolbox Enhancement (v2.0)',
+      '   Chemical & Sample Management',
+      '',
+      `Server running on port ${PORT}`,
+      `http://localhost:${PORT}`,
+      `http://${os.hostname()}:${PORT}`,
+      '',
+      '💡 To enable HTTPS, set USE_HTTPS=true',
+    ]);
   });
 
   // Set server timeouts

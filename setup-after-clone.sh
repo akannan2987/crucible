@@ -11,12 +11,16 @@ echo ""
 
 # Step 1: Copy SSL Certificates
 echo "Step 1: Copying SSL certificates..."
-CERT_SOURCE="/gpfs/Development/cgi/envs/beta/nespipe_rdkannanab_betabuild_ubp_dev02/etc/nespipe"
+# Defaults point at the RHEL8 VM's GPFS cert store; both are env-overridable
+# so the script also works on other machines (it skips this step gracefully
+# when CERT_SOURCE does not exist, e.g. on a Mac).
+CERT_SOURCE="${CERT_SOURCE:-/gpfs/Development/cgi/envs/beta/nespipe_rdkannanab_betabuild_ubp_dev02/etc/nespipe}"
+CERT_HOSTNAME="${CERT_HOSTNAME:-nr-ubp-dev-02.nihs.ch.nestle.com}"
 
 if [ -d "$CERT_SOURCE" ]; then
     mkdir -p certs
-    cp "$CERT_SOURCE/nr-ubp-dev-02.nihs.ch.nestle.com.cer" certs/server.crt
-    cp "$CERT_SOURCE/nr-ubp-dev-02.nihs.ch.nestle.com.key" certs/server.key
+    cp "$CERT_SOURCE/${CERT_HOSTNAME}.cer" certs/server.crt
+    cp "$CERT_SOURCE/${CERT_HOSTNAME}.key" certs/server.key
     cp "$CERT_SOURCE/Nestle_Root_CA.cer" certs/ca.crt
     chmod 600 certs/server.key
     
@@ -81,7 +85,8 @@ echo "║   ✅ Setup Complete!                                      ║"
 echo "╚═══════════════════════════════════════════════════════════╝"
 echo ""
 echo "Access the application at:"
-echo "  https://nr-ubp-dev-02.nihs.ch.nestle.com:5942"
+echo "  http://localhost:${PORT:-49160}"
+echo "  http://$(hostname):${PORT:-49160}   (from another machine)"
 echo ""
 echo "Useful commands:"
 echo "  ./container.sh status  - Check container status"

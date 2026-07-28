@@ -1,0 +1,19 @@
+# Never copy host dependencies into the image — they may be for the wrong
+# OS/architecture (e.g. macOS arm64 vs linux amd64). The Dockerfile runs
+# npm install inside the image instead.
+node_modules
+**/node_modules
+
+# Rebuilt inside the image by `npm run build`
+client/dist
+
+# Runtime state — mounted as volumes at run time, never baked into the image
+data
+server/data
+certs
+
+# Repo/VCS and OS noise
+.git
+.gitignore
+*.log
+.DS_Store

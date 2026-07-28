@@ -2,8 +2,8 @@
 
 Complete REST API reference for the Chemical and Sample Management System.
 
-**Production URL (HTTPS):** `https://nr-ubp-dev-02.nihs.ch.nestle.com:5942/api`  
-**Development URL:** `http://localhost:5942/api`
+**Production URL (HTTPS):** `https://nr-ubp-dev-02.nihs.ch.nestle.com:49160/api`  
+**Development URL:** `http://localhost:49160/api`
 
 > 🔒 **Note:** Production endpoints use HTTPS. Add `-k` flag to `curl` commands if using self-signed certificates. All examples below show production HTTPS URLs.
 
@@ -69,44 +69,44 @@ REST APIs use HTTP methods (also called "verbs") to perform different operations
 **Option 1: Using cURL (Command Line)**
 ```bash
 # GET request - List chemicals
-curl "https://nr-ubp-dev-02.nihs.ch.nestle.com:5942/api/chemicals"
+curl "https://nr-ubp-dev-02.nihs.ch.nestle.com:49160/api/chemicals"
 
 # POST request - Add chemical
-curl -X POST "https://nr-ubp-dev-02.nihs.ch.nestle.com:5942/api/chemicals" \
+curl -X POST "https://nr-ubp-dev-02.nihs.ch.nestle.com:49160/api/chemicals" \
   -H "Content-Type: application/json" \
   -d '{"chemical_id":"TEST-001","name":"Test Chemical"}'
 
 # PUT request - Update chemical
-curl -X PUT "https://nr-ubp-dev-02.nihs.ch.nestle.com:5942/api/chemicals/TEST-001" \
+curl -X PUT "https://nr-ubp-dev-02.nihs.ch.nestle.com:49160/api/chemicals/TEST-001" \
   -H "Content-Type: application/json" \
   -d '{"supplier":"New Supplier"}'
 
 # DELETE request - Remove chemical
-curl -X DELETE "https://nr-ubp-dev-02.nihs.ch.nestle.com:5942/api/chemicals/TEST-001"
+curl -X DELETE "https://nr-ubp-dev-02.nihs.ch.nestle.com:49160/api/chemicals/TEST-001"
 ```
 
 **Option 2: Using Browser**
 - GET requests can be tested directly in browser:
-  - Navigate to: `https://nr-ubp-dev-02.nihs.ch.nestle.com:5942/api/stats`
-  - Navigate to: `https://nr-ubp-dev-02.nihs.ch.nestle.com:5942/api/chemicals`
+  - Navigate to: `https://nr-ubp-dev-02.nihs.ch.nestle.com:49160/api/stats`
+  - Navigate to: `https://nr-ubp-dev-02.nihs.ch.nestle.com:49160/api/chemicals`
 
 **Option 3: Using Postman**
 1. Download Postman (free tool for API testing)
 2. Create new request
 3. Select method (GET, POST, PUT, DELETE)
-4. Enter URL: `https://nr-ubp-dev-02.nihs.ch.nestle.com:5942/api/chemicals`
+4. Enter URL: `https://nr-ubp-dev-02.nihs.ch.nestle.com:49160/api/chemicals`
 5. For POST/PUT: Add JSON body in "Body" tab
 6. Click "Send"
 
 **Option 4: Using JavaScript in Browser Console**
 ```javascript
 // GET request
-fetch('https://nr-ubp-dev-02.nihs.ch.nestle.com:5942/api/chemicals')
+fetch('https://nr-ubp-dev-02.nihs.ch.nestle.com:49160/api/chemicals')
   .then(res => res.json())
   .then(data => console.log(data));
 
 // POST request
-fetch('https://nr-ubp-dev-02.nihs.ch.nestle.com:5942/api/chemicals', {
+fetch('https://nr-ubp-dev-02.nihs.ch.nestle.com:49160/api/chemicals', {
   method: 'POST',
   headers: {'Content-Type': 'application/json'},
   body: JSON.stringify({chemical_id: 'TEST-001', name: 'Test'})
@@ -241,7 +241,7 @@ Get real-time statistics for all modules.
 **cURL Example:**
 
 ```bash
-curl http://localhost:5942/api/stats
+curl http://localhost:49160/api/stats
 ```
 
 ---
@@ -295,10 +295,10 @@ Get paginated list of all chemicals with optional search.
 
 ```bash
 # Get all chemicals
-curl "http://localhost:5942/api/chemicals?page=1&limit=20"
+curl "http://localhost:49160/api/chemicals?page=1&limit=20"
 
 # Search chemicals
-curl "http://localhost:5942/api/chemicals?search=caffeine"
+curl "http://localhost:49160/api/chemicals?search=caffeine"
 ```
 
 ---
@@ -337,7 +337,7 @@ Get details of a specific chemical by ID.
 **cURL Example:**
 
 ```bash
-curl http://localhost:5942/api/chemicals/CHEM-001
+curl http://localhost:49160/api/chemicals/CHEM-001
 ```
 
 ---
@@ -366,7 +366,7 @@ Get simplified list of chemicals for dropdown menus.
 **cURL Example:**
 
 ```bash
-curl http://localhost:5942/api/chemicals/list/dropdown
+curl http://localhost:49160/api/chemicals/list/dropdown
 ```
 
 ---
@@ -409,7 +409,7 @@ Add a new chemical to the database.
 **cURL Example:**
 
 ```bash
-curl -X POST http://localhost:5942/api/chemicals \
+curl -X POST http://localhost:49160/api/chemicals \
   -H "Content-Type: application/json" \
   -d '{
     "chemical_id": "CHEM-001",
@@ -449,7 +449,7 @@ Update an existing chemical.
 **cURL Example:**
 
 ```bash
-curl -X PUT http://localhost:5942/api/chemicals/CHEM-001 \
+curl -X PUT http://localhost:49160/api/chemicals/CHEM-001 \
   -H "Content-Type: application/json" \
   -d '{"supplier": "New Supplier"}'
 ```
@@ -473,7 +473,7 @@ Delete a chemical by ID.
 **cURL Example:**
 
 ```bash
-curl -X DELETE http://localhost:5942/api/chemicals/CHEM-001
+curl -X DELETE http://localhost:49160/api/chemicals/CHEM-001
 ```
 
 ---
@@ -513,7 +513,7 @@ Bulk upload chemicals via Excel file.
 **cURL Example:**
 
 ```bash
-curl -X POST http://localhost:5942/api/chemicals/upload/excel \
+curl -X POST http://localhost:49160/api/chemicals/upload/excel \
   -F "file=@chemicals.xlsx"
 ```
 
@@ -608,7 +608,7 @@ Every other `> <FIELD_NAME>` block is preserved verbatim in `metadata`, includin
 **cURL Example:**
 
 ```bash
-curl -X POST https://localhost:5942/api/chemicals/upload/sdf \
+curl -X POST https://localhost:49160/api/chemicals/upload/sdf \
   -F "file=@chemicals.sdf"
 ```
 
@@ -641,7 +641,7 @@ Delete multiple chemicals at once.
 **cURL Example:**
 
 ```bash
-curl -X POST http://localhost:5942/api/chemicals/bulk/delete \
+curl -X POST http://localhost:49160/api/chemicals/bulk/delete \
   -H "Content-Type: application/json" \
   -d '{"chemical_ids": ["CHEM-001", "CHEM-002"]}'
 ```
@@ -679,7 +679,7 @@ Update multiple chemicals with the same data.
 **cURL Example:**
 
 ```bash
-curl -X POST http://localhost:5942/api/chemicals/bulk/update \
+curl -X POST http://localhost:49160/api/chemicals/bulk/update \
   -H "Content-Type: application/json" \
   -d '{
     "chemical_ids": ["CHEM-001", "CHEM-002"],
@@ -707,7 +707,7 @@ curl -X POST http://localhost:5942/api/chemicals/bulk/update \
 **cURL Example:**
 
 ```bash
-curl -X DELETE http://localhost:5942/api/chemicals/all/clear
+curl -X DELETE http://localhost:49160/api/chemicals/all/clear
 ```
 
 ---
@@ -839,7 +839,7 @@ Re-uploading a sample **preserves** its existing `chemical_ids`.
 **cURL Example:**
 
 ```bash
-curl -X POST http://localhost:5942/api/samples/upload/excel \
+curl -X POST http://localhost:49160/api/samples/upload/excel \
   -F "file=@Upload_Sample template_PIPM00617.xlsx"
 ```
 
@@ -1008,7 +1008,7 @@ Get paginated list of toxicology data.
 ```javascript
 import axios from 'axios';
 
-const API_BASE = 'http://localhost:5942/api';
+const API_BASE = 'http://localhost:49160/api';
 
 // Get all chemicals
 const getChemicals = async () => {
@@ -1057,7 +1057,7 @@ const bulkDelete = async (ids) => {
 ```python
 import requests
 
-API_BASE = 'http://localhost:5942/api'
+API_BASE = 'http://localhost:49160/api'
 
 # Get all chemicals
 response = requests.get(f'{API_BASE}/chemicals')
@@ -1093,7 +1093,7 @@ print(response.json())
 ```bash
 #!/bin/bash
 
-API_BASE="http://localhost:5942/api"
+API_BASE="http://localhost:49160/api"
 
 # Get statistics
 curl "$API_BASE/stats"
@@ -1131,7 +1131,7 @@ Import the Postman collection for easy API testing:
 
 1. Download: [Pandora-Toolbox-API.postman_collection.json](docs/Pandora-Toolbox-API.postman_collection.json)
 2. Import into Postman
-3. Set base URL variable: `http://localhost:5942/api`
+3. Set base URL variable: `http://localhost:49160/api`
 
 ---
 

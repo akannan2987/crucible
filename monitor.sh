@@ -3,9 +3,12 @@
 # Crucible Health Monitor
 # This script checks if the application is responding and restarts if needed
 
-CONTAINER_NAME="crucible"
-API_URL="https://localhost:5942/api/stats"
-LOG_FILE="/tmp/pandora-monitor.log"
+CONTAINER_NAME="${CONTAINER_NAME:-crucible}"
+PORT="${PORT:-49160}"
+# Default assumes plain-HTTP deployment (./container.sh start). For an SSL
+# deployment set API_URL=https://localhost:<port>/api/stats explicitly.
+API_URL="${API_URL:-http://localhost:${PORT}/api/stats}"
+LOG_FILE="${LOG_FILE:-/tmp/crucible-monitor.log}"
 
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"

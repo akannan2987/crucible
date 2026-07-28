@@ -354,7 +354,7 @@ Build frontend (React → static files)
     ↓
 Serve both from Express
     ↓
-Expose port 5942
+Expose port 49160
 ```
 
 ### Container Layers
@@ -441,7 +441,7 @@ For higher scale, consider:
 
 ### Current Capabilities
 
-- **HTTPS Health Monitoring**: `monitor.sh` checks `https://localhost:5942/api/stats` every 5 minutes via cron
+- **HTTPS Health Monitoring**: `monitor.sh` checks `https://localhost:49160/api/stats` every 5 minutes via cron
 - **Auto-Restart**: Container automatically restarted if health check fails
 - **Monitor Logs**: All activity logged to `/tmp/pandora-monitor.log`
 - **Server Keepalive**: 65s keepAliveTimeout, 66s headersTimeout, 120s requestTimeout
@@ -488,14 +488,14 @@ The architecture allows easy extension:
 ```
 ┌──────────────────────────────────────────┐
 │         User's Browser                    │
-│  https://nr-ubp-dev-02:5942  🔒          │
+│  https://nr-ubp-dev-02:49160  🔒          │
 └────────────────┬─────────────────────────┘
-                 │ HTTPS/TLS (Port 5942)
+                 │ HTTPS/TLS (Port 49160)
 ┌────────────────▼─────────────────────────┐
 │      Podman Container                     │
 │  ┌────────────────────────────────────┐  │
 │  │   Node.js HTTPS Server             │  │
-│  │   Port 5942 (TLS)                  │  │
+│  │   Port 49160 (TLS)                  │  │
 │  │   SSL Certs: /app/certs/           │  │
 │  │   Serves: React App + API          │  │
 │  └────────────┬───────────────────────┘  │
@@ -629,7 +629,7 @@ To add new explicit field mappings, edit the `mapMoleculeToChemical()` function 
 ## Interactive Architecture Page
 
 An interactive visual architecture diagram is served at `/architecture`:
-- **URL:** `https://nr-ubp-dev-02.nihs.ch.nestle.com:5942/architecture`
+- **URL:** `https://nr-ubp-dev-02.nihs.ch.nestle.com:49160/architecture`
 - **Source:** `docs/architecture-interactive.html`
 - **Features:** Animated data flow, clickable components, tabbed sections (Data Flow, Layers, Tech Stack, Data Model, Security, Deployment)
 

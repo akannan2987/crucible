@@ -4,7 +4,10 @@
 # This script generates self-signed certificates for HTTPS
 
 CERT_DIR="$(pwd)/certs"
-DOMAIN="nr-ubp-dev-02.nihs.ch.nestle.com"
+# Certificate CN defaults to this machine's FQDN; override with
+# SSL_DOMAIN=my.host.name ./setup-ssl.sh
+DOMAIN="${SSL_DOMAIN:-$(hostname -f 2>/dev/null || hostname)}"
+PORT="${PORT:-49160}"
 
 echo "╔═══════════════════════════════════════════════════════════╗"
 echo "║   🔐 SSL Certificate Setup for Crucible                   ║"
@@ -34,7 +37,7 @@ if [ $? -eq 0 ]; then
     echo "Next steps:"
     echo "  1. Rebuild the container: ./container.sh build"
     echo "  2. Start with HTTPS: ./container.sh start"
-    echo "  3. Access at: https://${DOMAIN}:5942"
+    echo "  3. Access at: https://${DOMAIN}:${PORT}"
     echo ""
     echo "Note: Since this is a self-signed certificate, browsers will show"
     echo "a security warning. Click 'Advanced' and 'Proceed' to continue."

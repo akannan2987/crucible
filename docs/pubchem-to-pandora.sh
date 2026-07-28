@@ -8,7 +8,9 @@
 #   ./docs/pubchem-to-pandora.sh aspirin
 # ============================================================
 
-PANDORA_URL="https://nr-ubp-dev-02.nihs.ch.nestle.com:5942"
+# Target Crucible instance; override for a remote deployment, e.g.
+#   PANDORA_URL=http://nr-ubp-dev-02.nihs.ch.nestle.com:49160 ./docs/pubchem-to-pandora.sh caffeine
+PANDORA_URL="${PANDORA_URL:-http://localhost:49160}"
 COMPOUND="${1:?Usage: $0 <compound-name-or-CAS>}"
 
 echo "═══════════════════════════════════════════════════"

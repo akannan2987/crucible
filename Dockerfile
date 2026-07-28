@@ -32,19 +32,22 @@ RUN mkdir -p /app/server/data /app/certs
 
 # Set environment variables
 ENV NODE_ENV=production
-ENV PORT=5942
+ENV PORT=49160
 ENV USE_HTTPS=false
 ENV SSL_CERT_PATH=/app/certs/server.crt
 ENV SSL_KEY_PATH=/app/certs/server.key
 ENV CA_BUNDLE_PATH=/etc/ssl/certs/ca-certificates.crt
 
 # Expose application port
-EXPOSE 5942
+EXPOSE 49160
 
-# Health check
+# Health check — shell form so ${PORT} is expanded at runtime; stays
+# correct even if the container is started with a different -e PORT=...
+# 127.0.0.1 (not localhost): in-container localhost resolves to ::1 first,
+# but the server binds 0.0.0.0 (IPv4), so busybox wget would get refused.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:5942/api/stats || \
-      wget --no-verbose --tries=1 --spider --no-check-certificate https://localhost:5942/api/stats || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:${PORT}/api/stats || \
+      wget --no-verbose --tries=1 --spider --no-check-certificate https://127.0.0.1:${PORT}/api/stats || exit 1
 
 # Start the server
 CMD ["node", "src/index.js"]

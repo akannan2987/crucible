@@ -37,8 +37,8 @@ npm run dev
 ```
 
 Access the application:
-- **Production (HTTPS):** `https://nr-ubp-dev-02.nihs.ch.nestle.com:5942`
-- **Development:** `http://localhost:3000` (frontend) + `http://localhost:5942` (API)
+- **Production (HTTPS):** `https://nr-ubp-dev-02.nihs.ch.nestle.com:49160`
+- **Development:** `http://localhost:3000` (frontend) + `http://localhost:49160` (API)
 
 ---
 
@@ -109,7 +109,7 @@ npm run dev
 
 This starts:
 - Frontend dev server: `http://localhost:3000`
-- Backend API server: `http://localhost:5942`
+- Backend API server: `http://localhost:49160`
 
 ### Build for Production
 
@@ -117,11 +117,11 @@ This starts:
 # Build the React frontend
 npm run build
 
-# Start the production server on port 5942
-PORT=5942 npm start
+# Start the production server on port 49160
+PORT=49160 npm start
 ```
 
-Production app runs at: `http://localhost:5942`
+Production app runs at: `http://localhost:49160`
 
 ---
 
@@ -219,10 +219,10 @@ openssl rsa -noout -modulus -in certs/server.key | openssl md5
 
 | Environment | URL | Protocol |
 |-------------|-----|----------|
-| **Production (HTTPS)** | `https://nr-ubp-dev-02.nihs.ch.nestle.com:5942` | HTTPS/TLS |
-| **Architecture Docs** | `https://nr-ubp-dev-02.nihs.ch.nestle.com:5942/architecture` | HTTPS/TLS |
+| **Production (HTTPS)** | `https://nr-ubp-dev-02.nihs.ch.nestle.com:49160` | HTTPS/TLS |
+| **Architecture Docs** | `https://nr-ubp-dev-02.nihs.ch.nestle.com:49160/architecture` | HTTPS/TLS |
 | Development (Frontend) | `http://localhost:3000` | HTTP |
-| Development (API) | `http://localhost:5942` | HTTP |
+| Development (API) | `http://localhost:49160` | HTTP |
 
 ---
 
@@ -318,11 +318,11 @@ crontab -l | grep pandora
 ### Port Already in Use
 
 ```bash
-# Check what's using port 5942
-lsof -i :5942
+# Check what's using port 49160
+lsof -i :49160
 
 # Kill the process
-fuser -k 5942/tcp
+fuser -k 49160/tcp
 ```
 
 ### Container Issues

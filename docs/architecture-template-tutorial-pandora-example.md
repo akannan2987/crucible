@@ -37,7 +37,7 @@ This is the plain-text brief prepared before any prompting. It contains all the 
 ```
 PROJECT: Pandora Toolbox 2.0
 ORG: Nestlé Research · Computational Sciences · NIPS
-URL: https://nr-ubp-dev-02.nihs.ch.nestle.com:5942
+URL: https://nr-ubp-dev-02.nihs.ch.nestle.com:49160
 
 COMPONENTS:
 - Frontend: React 18.2 + Vite 5.1 + Tailwind 3.4
@@ -48,7 +48,7 @@ COMPONENTS:
 
 DATA FLOW:
 1. User clicks/searches/uploads in browser
-2. React sends HTTPS request via Axios to Express API on port 5942
+2. React sends HTTPS request via Axios to Express API on port 49160
 3. Express validates input, parses files (Excel via XLSX, SDF via custom parser)
 4. LowDB reads/writes to data/pandora.json
 5. JSON response returns → React re-renders the table/dashboard
@@ -88,7 +88,7 @@ DATA MODEL:
 - All collections link back to chemicals via chemical_id
 
 SECURITY:
-- HTTPS/TLS on port 5942 (Nestlé-signed SSL certificates)
+- HTTPS/TLS on port 49160 (Nestlé-signed SSL certificates)
 - Certificate management: excluded from git, MD5 verified, key chmod 600
 - CORS restricted to specific origins
 - Server-side input validation on every field
@@ -98,7 +98,7 @@ SECURITY:
 
 DEPLOYMENT:
 - Host: nr-ubp-dev-02.nihs.ch.nestle.com (RHEL Linux)
-- Port: 5942 (HTTPS only, no HTTP fallback)
+- Port: 49160 (HTTPS only, no HTTP fallback)
 - Container: Podman (Node 18 Alpine base image)
 - Volumes: data/pandora.json (persistent), certs/ (read-only mount)
 - Health: monitor.sh via cron every 5min → curl /api/stats → auto-restart on failure
@@ -150,7 +150,7 @@ Requirements:
   - 🔬 Screening records — ~50,000
   - ☣️ Toxicology records — ~50,000
   - 👥 Concurrent users — 50 – 100
-  - 🚪 Hosted on port — 5942
+  - 🚪 Hosted on port — 49160
 
 **Sticky nav bar** (top-0 z-30 backdrop-blur-md bg-slate-950/70 border-y border-slate-800):
 - 6 tab buttons (data-tab attributes: flow, layers, stack, data, security, deploy):
@@ -229,7 +229,7 @@ runScenario function: on click, reset all 4 cards, then sequentially (500ms dela
 Container wrapper (opacity 0.6):
 - Dashed rect at (260, 180) 560×320, rx=22, stroke #64748b
 - Podman seal icon at (600, 190): purple circles + ellipses forming a seal face
-- Text: "Podman Container · port 5942 · HTTPS"
+- Text: "Podman Container · port 49160 · HTTPS"
 
 **5 boxes** (`<g class="node" data-info="[id]" style="cursor:pointer">`):
 
@@ -296,7 +296,7 @@ Container wrapper (opacity 0.6):
 Node descriptions:
 - user: "👤 User — The starting point" / "A scientist or project manager interacts with Pandora through a web browser. Every action they take becomes an event that the React app captures and turns into a secure API call."
 - react: "⚛️ React SPA — The face of Pandora" / "A Single Page Application built with React 18 and bundled by Vite. It runs entirely inside the browser — pages don't reload. It fetches data using Axios over HTTPS, then re-renders only what changed."
-- express: "🟢 Express API — The traffic controller" / "A Node.js 18 server using the Express framework. It exposes REST endpoints like /api/chemicals, validates every request, handles file uploads via Multer, parses Excel with XLSX and SDF with a custom parser. It also serves the compiled React app to the browser on port 5942."
+- express: "🟢 Express API — The traffic controller" / "A Node.js 18 server using the Express framework. It exposes REST endpoints like /api/chemicals, validates every request, handles file uploads via Multer, parses Excel with XLSX and SDF with a custom parser. It also serves the compiled React app to the browser on port 49160."
 - db: "🗄️ LowDB — The single-file database" / "A lightweight JSON-based database stored as one file: pandora.json. It holds four collections — chemicals, samples, screening, toxicology — and comfortably handles ~50,000 total records. Beyond that, consider migrating to SQLite or PostgreSQL. The file lives on a persistent volume so data survives container restarts."
 - pubchem: "🌐 PubChem API — External chemical database" / "PubChem (pubchem.ncbi.nlm.nih.gov) is a free NIH database with 100M+ compounds. Pandora can call it to auto-fill molecular formula, weight, SMILES, and InChIKey when a user enters a CAS number or compound name."
 
@@ -310,7 +310,7 @@ Each has class `step-card`, data-step="N", is clickable.
 **Expanded step panel** (id="step-detail", hidden, border-pink-400/30):
 Step explanations (HTML content):
 - Step 1: "User clicks a button, types a search query, or drops an Excel/SDF file onto the upload area. React captures this as a JavaScript event — onChange, onClick, or onDrop. No network call happens yet; only the user's intent is recorded in component state."
-- Step 2: "Axios constructs an HTTP request (GET for reads, POST for creates, PUT for updates, DELETE for removals). The request travels over TLS-encrypted HTTPS to port 5942. The server's SSL certificate — signed by the Nestlé Root CA — proves the server's identity to the browser."
+- Step 2: "Axios constructs an HTTP request (GET for reads, POST for creates, PUT for updates, DELETE for removals). The request travels over TLS-encrypted HTTPS to port 49160. The server's SSL certificate — signed by the Nestlé Root CA — proves the server's identity to the browser."
 - Step 3: "The Express route handler receives the request. It validates required fields, checks types and formats (CAS numbers, numeric weights). For file uploads, Multer saves the file to a temp path, then XLSX or the custom SDF parser extracts rows. Valid records are written to pandora.json via LowDB. Invalid rows are collected into an errors array."
 - Step 4: "Express sends back a JSON response with the result (created record, updated count, or error details). Axios resolves its Promise. React's setState triggers a re-render — only the affected components update. A toast notification (React Hot Toast) confirms success or reports errors. No page reload occurs."
 
@@ -365,7 +365,7 @@ Subtitle: "Like floors in a building — each layer has one clear job." (text-sl
 - Emoji: 🔀 (text-3xl)
 - Label: "Layer 2 · API Gateway (Server Routes)" in text-violet-300
 - Title: "The traffic controller & request dispatcher"
-- Description: "An **Express.js** HTTP server exposing RESTful endpoints over HTTPS on port 5942. Each route maps to a specific resource and operation."
+- Description: "An **Express.js** HTTP server exposing RESTful endpoints over HTTPS on port 49160. Each route maps to a specific resource and operation."
 - Bullets:
   - `GET/POST/PUT/DELETE /api/chemicals` — CRUD operations for chemical records.
   - `POST /api/chemicals/upload/excel` — bulk import from Excel via Multer + XLSX.
@@ -478,7 +478,7 @@ Grid: `grid md:grid-cols-2 gap-6`
    - Why: "Cryptographically random. Zero collision risk. No sequential patterns to guess or enumerate."
 
 8. 🌐 **CORS** 2.8.5 — "Cross-origin headers"
-   - Why: "Required when Vite dev server (:5173) calls Express (:5942). Configurable allowed origins for production."
+   - Why: "Required when Vite dev server (:5173) calls Express (:49160). Configurable allowed origins for production."
 
 **DevOps card** (glass rounded-2xl p-6 md:col-span-2):
 - h4: "⚙️ DevOps & Infrastructure"
@@ -563,13 +563,13 @@ Cards (glass rounded-2xl p-5 lift):
   - Outer rect: "nr-ubp-dev-02.nihs.ch.nestle.com" server (full width, light border)
   - Inner dashed rect: "Podman Container" (with small podman seal icon)
   - Inside container:
-    - Box: "Node.js HTTPS Server · :5942" (indigo)
+    - Box: "Node.js HTTPS Server · :49160" (indigo)
     - Box: "📁 data/pandora.json" with "Volume mount (persistent)" label (emerald)
     - Box: "🔒 certs/" with "Read-only mount" label (pink)
   - External box (bottom-left): "🏥 Health Monitor" with "cron · every 5min" subtitle
   - Arrow from monitor → container: "curl /api/stats → restart if unhealthy"
   - External box (top): "👤 User Browser"
-  - Arrow from user → container through "HTTPS :5942"
+  - Arrow from user → container through "HTTPS :49160"
 - Below SVG: 3-col grid:
   - "🖥️ Host" — "nr-ubp-dev-02 · RHEL Linux · Nestlé internal network"
   - "🔄 Auto-heal" — "monitor.sh checks every 5 minutes. If /api/stats fails, container is restarted automatically. Logs to /tmp/pandora-monitor.log."
@@ -631,7 +631,7 @@ Review `docs/architecture-interactive.html` and fix any issues:
 The finished file:
 - **Path**: `docs/architecture-interactive.html`
 - **Size**: ~1,070 lines
-- **Served at**: `https://nr-ubp-dev-02.nihs.ch.nestle.com:5942/architecture`
+- **Served at**: `https://nr-ubp-dev-02.nihs.ch.nestle.com:49160/architecture`
 - **Dependencies**: None (only Tailwind CDN at runtime)
 
 ---
