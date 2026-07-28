@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pandora Toolbox 2.0 — Interactive Architecture</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root {
+    --pandora-1: #6366f1;
+    --pandora-2: #8b5cf6;
+    --pandora-3: #ec4899;
+    --pandora-4: #10b981;
+  }
+  body {
+    background: radial-gradient(circle at 20% 10%, #1e1b4b 0%, #0f172a 40%, #020617 100%);
+    color: #e2e8f0;
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100vh;
+  }
+  .glass {
+    background: rgba(30, 41, 59, 0.55);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .glow {
+    box-shadow: 0 0 25px rgba(139, 92, 246, 0.35), 0 0 60px rgba(99, 102, 241, 0.18);
+  }
+  .gradient-text {
+    background: linear-gradient(90deg, #a5b4fc, #c4b5fd, #f9a8d4);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Pulsing nodes */
+  @keyframes pulse-ring {
+    0% { transform: scale(0.85); opacity: 0.9; }
+    100% { transform: scale(1.6); opacity: 0; }
+  }
+  .pulse-ring::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    border: 2px solid currentColor;
+    animation: pulse-ring 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Floating */
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  .float { animation: float 4s ease-in-out infinite; }
+
+  /* Flow line animation (dashed travel) */
+  .flow-path {
+    stroke-dasharray: 8 6;
+    animation: flow 1.6s linear infinite;
+  }
+  @keyframes flow {
+    to { stroke-dashoffset: -28; }
+  }
+  .flow-reverse { animation-direction: reverse; }
+
+  /* Particle pings */
+  .particle {
+    offset-rotate: 0deg;
+    animation: travel 3.2s linear infinite;
+  }
+  @keyframes travel {
+    from { offset-distance: 0%; opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    to { offset-distance: 100%; opacity: 0; }
+  }
+
+  /* Fade-in on scroll */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+  .reveal.visible { opacity: 1; transform: none; }
+
+  /* Hover lift */
+  .lift {
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  }
+  .lift:hover {
+    transform: translateY(-4px);
+    border-color: rgba(165, 180, 252, 0.5);
+    box-shadow: 0 12px 30px rgba(99, 102, 241, 0.25);
+  }
+
+  /* Tab buttons */
+  .tab-btn.active {
+    background: linear-gradient(90deg, #6366f1, #ec4899);
+    color: white;
+  }
+
+  /* Soft bg blobs */
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.35;
+    pointer-events: none;
+    z-index: -1;
+  }
+</style>
+</head>
+<body class="relative overflow-x-hidden">
+
+<div class="blob" style="width:480px;height:480px;background:#6366f1;top:-100px;left:-100px;"></div>
+<div class="blob" style="width:520px;height:520px;background:#ec4899;top:30%;right:-150px;"></div>
+<div class="blob" style="width:420px;height:420px;background:#10b981;bottom:-100px;left:30%;"></div>
+
+<!-- HERO -->
+<header class="relative max-w-7xl mx-auto px-6 pt-14 pb-10">
+  <div class="flex items-center gap-3 mb-6">
+    <div class="w-12 h-12 rounded-xl glass glow flex items-center justify-center text-2xl float">🧪</div>
+    <div>
+      <p class="text-xs uppercase tracking-[0.3em] text-indigo-300">Nestlé Research · Computational Sciences · NIPS</p>
+      <h1 class="text-2xl font-semibold">Pandora Toolbox <span class="gradient-text">2.0</span></h1>
+    </div>
+  </div>
+  <div class="grid md:grid-cols-3 gap-6 items-end">
+    <div class="md:col-span-2">
+      <h2 class="text-4xl md:text-5xl font-bold leading-tight">
+        How <span class="gradient-text">Pandora</span> works,<br/>explained visually.
+      </h2>
+      <p class="mt-4 text-slate-300 max-w-2xl">
+        Architecture of Chemical &amp; Sample Management System — from the user's browser,
+        across the network, into the container, and down to the database.
+      </p>
+      <div class="flex flex-wrap gap-2 mt-6">
+        <span class="px-3 py-1 rounded-full glass text-xs">🌐 Web App</span>
+        <span class="px-3 py-1 rounded-full glass text-xs">⚛️ React + Vite</span>
+        <span class="px-3 py-1 rounded-full glass text-xs">🟢 Node.js + Express</span>
+        <span class="px-3 py-1 rounded-full glass text-xs">📦 Podman Container</span>
+        <span class="px-3 py-1 rounded-full glass text-xs">🔒 HTTPS / TLS</span>
+      </div>
+    </div>
+    <div class="glass rounded-2xl p-5">
+      <p class="text-xs uppercase tracking-wider text-indigo-300 mb-3">At a glance</p>
+      <ul class="space-y-2 text-sm">
+        <li class="flex justify-between"><span>🧬 Chemicals capacity</span><b>~50,000</b></li>
+        <li class="flex justify-between"><span>🧫 Samples capacity</span><b>~50,000</b></li>
+        <li class="flex justify-between"><span>🔬 Screening records</span><b>~50,000</b></li>
+        <li class="flex justify-between"><span>☣️ Toxicology records</span><b>~50,000</b></li>
+        <li class="flex justify-between"><span>👥 Concurrent users</span><b>50 – 100</b></li>
+        <li class="flex justify-between"><span>🚪 Hosted on port</span><b>5942</b></li>
+      </ul>
+    </div>
+  </div>
+</header>
+
+<!-- NAVIGATION TABS -->
+<nav class="sticky top-0 z-30 backdrop-blur-md bg-slate-950/70 border-y border-slate-800">
+  <div class="max-w-7xl mx-auto px-6 py-3 flex gap-2 overflow-x-auto">
+    <button data-tab="flow" class="tab-btn active px-4 py-2 rounded-lg text-sm font-medium glass">⏩ Data Flow</button>
+    <button data-tab="layers" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium glass">🏗️ Layers</button>
+    <button data-tab="stack" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium glass">🧰 Tech Stack</button>
+    <button data-tab="data" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium glass">🗄️ Data Model</button>
+    <button data-tab="security" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium glass">🛡️ Security</button>
+    <button data-tab="deploy" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium glass">🚀 Deployment</button>
+  </div>
+</nav>
+
+<main class="max-w-7xl mx-auto px-6 py-12 space-y-24">
+
+  <!-- ============================ DATA FLOW SECTION ============================ -->
+  <section id="tab-flow" class="reveal">
+    <div class="flex items-end justify-between mb-6 flex-wrap gap-3">
+      <div>
+        <h3 class="text-2xl font-bold">⏩ Request–Response Pipeline</h3>
+        <p class="text-slate-400 text-sm">Directed data flow: Browser → API → Database → Response (DAG with no cycles).</p>
+      </div>
+      <div class="flex gap-2 text-xs" style="position:relative;z-index:50;">
+        <button id="btn-sim-read" type="button" style="cursor:pointer;pointer-events:auto;" class="px-3 py-2 rounded-lg glass lift">📥 Simulate Read</button>
+        <button id="btn-sim-write" type="button" style="cursor:pointer;pointer-events:auto;" class="px-3 py-2 rounded-lg glass lift">📤 Simulate Write</button>
+        <button id="btn-sim-upload" type="button" style="cursor:pointer;pointer-events:auto;" class="px-3 py-2 rounded-lg glass lift">📂 Simulate Upload</button>
+      </div>
+    </div>
+    <script>
+    // Immediate inline script — runs as soon as parsed, buttons already exist above
+    (function(){
+      var scenarioData = {
+        read:   { labels: ['👁️ View list','📡 GET /api/chemicals','📖 Read pandora.json','📋 Table renders'],
+                  descs:  ['User clicks "View Chemicals" in the sidebar','Axios fires GET request over HTTPS','LowDB loads matching records from JSON','React renders rows into the table'] },
+        write:  { labels: ['✏️ Save form','📡 POST /api/chemicals','✅ Validate + write','🎉 Toast: Saved!'],
+                  descs:  ['User fills out the form and clicks Save','Axios POSTs the JSON payload over HTTPS','Express validates then writes to pandora.json','Success toast appears, table refreshes'] },
+        upload: { labels: ['📂 Pick Excel','📡 POST upload/excel','🧮 Parse + bulk insert','📊 Summary report'],
+                  descs:  ['User selects an Excel or SDF file','File sent as multipart form-data over HTTPS','XLSX parses rows, validates, bulk-inserts','Summary shows inserted/updated/error counts'] }
+      };
+      var defaultLabels = ['User Interaction','Secure API Call','Business Logic','UI Updates'];
+      var defaultDescs = [
+        'Click, search, upload — events captured by React components.',
+        'Axios sends an HTTPS request over TLS to the Express API.',
+        'Server validates input, parses files (Excel/SDF), updates the database.',
+        'JSON response flows back; the page refreshes instantly without reload.'
+      ];
+      var timer = null;
+
+      function runScenario(name) {
+        var s = scenarioData[name];
+        if (!s) return;
+        if (timer) clearTimeout(timer);
+        // Reset
+        for (var k = 1; k <= 4; k++) {
+          var c = document.getElementById('step-card-' + k);
+          if (c) { c.style.background=''; c.style.boxShadow=''; c.style.outline=''; }
+          var l = document.getElementById('step-label-' + k);
+          if (l) l.textContent = defaultLabels[k-1];
+          var d = document.getElementById('step-desc-' + k);
+          if (d) d.textContent = defaultDescs[k-1];
+        }
+        // Animate sequentially
+        for (var i = 1; i <= 4; i++) {
+          (function(n){
+            setTimeout(function(){
+              var card = document.getElementById('step-card-' + n);
+              var lbl  = document.getElementById('step-label-' + n);
+              var dsc  = document.getElementById('step-desc-' + n);
+              if (lbl) lbl.textContent = s.labels[n-1];
+              if (dsc) dsc.textContent = s.descs[n-1];
+              if (card) {
+                card.style.background = 'rgba(99,102,241,0.4)';
+                card.style.boxShadow  = '0 0 24px rgba(99,102,241,0.5)';
+                card.style.outline    = '2px solid rgba(165,180,252,0.7)';
+              }
+            }, (n-1) * 500);
+          })(i);
+        }
+        // Restore after 4.5s
+        timer = setTimeout(function(){
+          for (var j = 1; j <= 4; j++) {
+            var c2 = document.getElementById('step-card-' + j);
+            if (c2) { c2.style.background=''; c2.style.boxShadow=''; c2.style.outline=''; }
+            var l2 = document.getElementById('step-label-' + j);
+            if (l2) l2.textContent = defaultLabels[j-1];
+            var d2 = document.getElementById('step-desc-' + j);
+            if (d2) d2.textContent = defaultDescs[j-1];
+          }
+        }, 4500);
+      }
+
+      document.getElementById('btn-sim-read').addEventListener('click', function(e){ e.stopPropagation(); runScenario('read'); });
+      document.getElementById('btn-sim-write').addEventListener('click', function(e){ e.stopPropagation(); runScenario('write'); });
+      document.getElementById('btn-sim-upload').addEventListener('click', function(e){ e.stopPropagation(); runScenario('upload'); });
+    })();
+    </script>
+
+    <!-- Animated Architecture Diagram -->
+    <div class="glass rounded-3xl p-6 md:p-10 relative overflow-hidden">
+      <p class="text-xs text-indigo-300 mb-3">💡 Click any box or numbered step below for a deeper explanation.</p>
+      <svg viewBox="0 0 1000 560" class="w-full h-auto" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="gflow" x1="0" x2="1">
+            <stop offset="0%" stop-color="#6366f1"/>
+            <stop offset="50%" stop-color="#a855f7"/>
+            <stop offset="100%" stop-color="#ec4899"/>
+          </linearGradient>
+          <linearGradient id="gflow-back" x1="1" x2="0">
+            <stop offset="0%" stop-color="#34d399"/>
+            <stop offset="100%" stop-color="#a5b4fc"/>
+          </linearGradient>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#c4b5fd"/>
+          </marker>
+          <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#86efac"/>
+          </marker>
+          <marker id="arrow-cyan" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#38bdf8"/>
+          </marker>
+        </defs>
+
+        <!-- Container wrapper (drawn first so boxes sit on top) -->
+        <g opacity="0.6">
+          <rect x="260" y="180" width="560" height="320" rx="22" fill="none" stroke="#64748b" stroke-dasharray="6 6"/>
+          <!-- Podman logo (seal silhouette) -->
+          <g transform="translate(600,190)">
+            <circle cx="0" cy="0" r="7" fill="#892ca0"/>
+            <ellipse cx="0" cy="5" rx="9" ry="5" fill="#892ca0"/>
+            <circle cx="-4" cy="-2" r="1.2" fill="#fff"/>
+            <circle cx="4" cy="-2" r="1.2" fill="#fff"/>
+            <ellipse cx="0" cy="1" rx="2.5" ry="1.5" fill="#d4a0e0"/>
+          </g>
+          <text x="614" y="195" fill="#c4b5fd" font-size="11"> Podman Container · port 5942 · HTTPS</text>
+        </g>
+
+        <!-- ===== Connecting paths (boxes: User 60-200/55-145 ; React 290-430/220-310 ; Express 620-790/220-310 ; LowDB 430-590/390-490) ===== -->
+
+        <!-- 1) User -> React SPA (arrives vertically into top-middle of React box) -->
+        <path id="p1" d="M 145 145 C 145 170, 300 170, 360 180 L 360 220"
+              stroke="url(#gflow)" stroke-width="3" fill="none"
+              class="flow-path" marker-end="url(#arrow)"/>
+
+        <!-- 2) React SPA -> Express API (right edge to left edge, slight arc) -->
+        <path id="p2" d="M 430 265 C 490 240, 560 240, 620 265"
+              stroke="url(#gflow)" stroke-width="3" fill="none"
+              class="flow-path" marker-end="url(#arrow)"/>
+
+        <!-- 3) Express API -> LowDB (bottom of Express curving into the right-middle edge of LowDB) -->
+        <path id="p3" d="M 705 310 C 705 400, 680 440, 600 440"
+              stroke="url(#gflow)" stroke-width="3" fill="none"
+              class="flow-path" marker-end="url(#arrow)"/>
+
+        <!-- 4) Response: LowDB -> React SPA (left-middle of LowDB to bottom-middle of React) -->
+        <path id="p4" d="M 430 440 C 360 440, 360 390, 360 310"
+              stroke="url(#gflow-back)" stroke-width="3" fill="none"
+              class="flow-path flow-reverse" marker-end="url(#arrow-green)"/>
+
+        <!-- Particles travelling along the paths -->
+        <circle r="6" fill="#fde68a"
+                style="offset-path: path('M 145 145 C 145 170, 300 170, 360 180 L 360 220'); animation: travel 3s linear infinite"/>
+        <circle r="6" fill="#a5f3fc"
+                style="offset-path: path('M 430 265 C 490 240, 560 240, 620 265'); animation: travel 2.4s linear infinite 0.6s"/>
+        <circle r="6" fill="#fbcfe8"
+                style="offset-path: path('M 705 310 C 705 400, 680 440, 600 440'); animation: travel 2.6s linear infinite 1.2s"/>
+        <circle r="5" fill="#86efac"
+                style="offset-path: path('M 430 440 C 360 440, 360 390, 360 310'); animation: travel 3.4s linear infinite 1.8s"/>
+
+        <!-- ===== Boxes (clickable) ===== -->
+
+        <!-- USER -->
+        <g class="node" data-info="user" style="cursor:pointer">
+          <rect x="60" y="55" width="170" height="90" rx="16" fill="#1e1b4b" stroke="#818cf8" stroke-width="2"/>
+          <text x="145" y="93" text-anchor="middle" font-size="26">👤</text>
+          <text x="145" y="117" text-anchor="middle" fill="#e0e7ff" font-size="13" font-weight="600">User</text>
+          <text x="145" y="133" text-anchor="middle" fill="#94a3b8" font-size="10">Scientist / PM · Browser</text>
+        </g>
+
+        <!-- BROWSER / REACT -->
+        <g class="node" data-info="react" style="cursor:pointer">
+          <rect x="290" y="220" width="140" height="90" rx="16" fill="#0c4a6e" stroke="#38bdf8" stroke-width="2"/>
+          <text x="360" y="258" text-anchor="middle" font-size="26">⚛️</text>
+          <text x="360" y="282" text-anchor="middle" fill="#e0f2fe" font-size="13" font-weight="600">React SPA</text>
+          <text x="360" y="298" text-anchor="middle" fill="#94a3b8" font-size="10">Browser · Vite build</text>
+        </g>
+
+        <!-- EXPRESS API -->
+        <g class="node" data-info="express" style="cursor:pointer">
+          <rect x="620" y="220" width="170" height="90" rx="16" fill="#3b0764" stroke="#a78bfa" stroke-width="2"/>
+          <text x="705" y="258" text-anchor="middle" font-size="26">🟢</text>
+          <text x="705" y="282" text-anchor="middle" fill="#ede9fe" font-size="13" font-weight="600">Express API</text>
+          <text x="705" y="298" text-anchor="middle" fill="#94a3b8" font-size="10">Node.js · REST routes</text>
+        </g>
+
+        <!-- DATABASE (drum-style cylinder icon) -->
+        <g class="node" data-info="db" style="cursor:pointer">
+          <rect x="430" y="390" width="170" height="100" rx="16" fill="#064e3b" stroke="#34d399" stroke-width="2"/>
+          <!-- Cylinder DB icon -->
+          <g transform="translate(515,418)">
+            <ellipse cx="0" cy="0" rx="18" ry="6" fill="#34d399" stroke="#a7f3d0" stroke-width="1.5"/>
+            <path d="M -18 0 L -18 18 A 18 6 0 0 0 18 18 L 18 0" fill="#10b981" stroke="#a7f3d0" stroke-width="1.5"/>
+            <ellipse cx="0" cy="6" rx="18" ry="6" fill="none" stroke="#a7f3d0" stroke-width="1" opacity="0.7"/>
+            <ellipse cx="0" cy="12" rx="18" ry="6" fill="none" stroke="#a7f3d0" stroke-width="1" opacity="0.5"/>
+          </g>
+          <text x="515" y="465" text-anchor="middle" fill="#d1fae5" font-size="13" font-weight="600">LowDB</text>
+          <text x="515" y="481" text-anchor="middle" fill="#94a3b8" font-size="10">pandora.json</text>
+        </g>
+
+        <!-- HTTPS lock badge -->
+        <g transform="translate(250,165)">
+          <circle r="16" fill="#1e293b" stroke="#f472b6" stroke-width="2"/>
+          <text y="5" text-anchor="middle" font-size="14">🔒</text>
+          <text x="22" y="-10" text-anchor="start" fill="#f9a8d4" font-size="9">HTTPS / TLS</text>
+        </g>
+
+        <!-- External API (PubChem) -->
+        <g class="node" data-info="pubchem" style="cursor:pointer">
+          <rect x="820" y="120" width="150" height="70" rx="14" fill="#1e3a5f" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <text x="895" y="150" text-anchor="middle" font-size="18">🌐</text>
+          <text x="895" y="168" text-anchor="middle" fill="#7dd3fc" font-size="11" font-weight="600">PubChem API</text>
+          <text x="895" y="182" text-anchor="middle" fill="#94a3b8" font-size="9">External Data Source (Example)</text>
+        </g>
+        <!-- Arrow from PubChem (bottom-middle) to Express (right-middle) -->
+        <path id="p-pubchem" d="M 895 190 Q 895 240 790 265" fill="none" stroke="#38bdf8" stroke-width="1.8" stroke-dasharray="6,4" marker-end="url(#arrow-cyan)"/>
+        <circle r="4" fill="#38bdf8">
+          <animateMotion dur="3s" repeatCount="indefinite" path="M 895 190 Q 895 240 790 265"/>
+        </circle>
+        <text x="850" y="230" fill="#7dd3fc" font-size="9">lookup</text>
+
+        <!-- Step labels on lines -->
+        <text x="130" y="180" fill="#a5b4fc" font-size="11" font-weight="600">1. Click / submit</text>
+        <text x="475" y="255" fill="#a5b4fc" font-size="11" font-weight="600">2. REST request</text>
+        <text x="715" y="365" fill="#a5b4fc" font-size="11" font-weight="600">3. Read / Write</text>
+        <text x="240" y="355" fill="#86efac" font-size="11" font-weight="600">4. JSON response → UI updates</text>
+      </svg>
+
+      <!-- Detail panel that shows when a box is clicked -->
+      <div id="node-detail" class="mt-4 glass rounded-xl p-4 text-sm hidden border border-indigo-400/30">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p id="node-detail-title" class="font-semibold text-indigo-200"></p>
+            <p id="node-detail-body" class="text-slate-300 text-xs mt-1"></p>
+          </div>
+          <button id="node-detail-close" class="text-slate-400 hover:text-white text-lg leading-none">✕</button>
+        </div>
+      </div>
+
+      <!-- Step Explainer cards (clickable) -->
+      <div id="flow-explainer" class="mt-6 grid md:grid-cols-4 gap-3 text-sm">
+        <div id="step-card-1" class="glass rounded-xl p-4 lift cursor-pointer step-card" data-step="1">
+          <div class="text-lg text-indigo-300">①</div>
+          <p class="font-semibold mt-1" id="step-label-1">User Interaction</p>
+          <p class="text-xs mt-1" id="step-desc-1" style="color:#94a3b8">Click, search, upload — events captured by React components.</p>
+        </div>
+        <div id="step-card-2" class="glass rounded-xl p-4 lift cursor-pointer step-card" data-step="2">
+          <div class="text-lg text-indigo-300">②</div>
+          <p class="font-semibold mt-1" id="step-label-2">Secure API Call</p>
+          <p class="text-xs mt-1" id="step-desc-2" style="color:#94a3b8">Axios sends an HTTPS request over TLS to the Express API.</p>
+        </div>
+        <div id="step-card-3" class="glass rounded-xl p-4 lift cursor-pointer step-card" data-step="3">
+          <div class="text-lg text-indigo-300">③</div>
+          <p class="font-semibold mt-1" id="step-label-3">Business Logic</p>
+          <p class="text-xs mt-1" id="step-desc-3" style="color:#94a3b8">Server validates input, parses files (Excel/SDF), updates the database.</p>
+        </div>
+        <div id="step-card-4" class="glass rounded-xl p-4 lift cursor-pointer step-card" data-step="4">
+          <div class="text-lg text-indigo-300">④</div>
+          <p class="font-semibold mt-1" id="step-label-4">UI Updates</p>
+          <p class="text-xs mt-1" id="step-desc-4" style="color:#94a3b8">JSON response flows back; the page refreshes instantly without reload.</p>
+        </div>
+      </div>
+
+      <!-- Expanded step explanation -->
+      <div id="step-detail" class="mt-4 glass rounded-xl p-5 text-sm hidden border border-pink-400/30">
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex-1">
+            <p id="step-detail-title" class="font-semibold text-pink-200 text-base"></p>
+            <div id="step-detail-body" class="text-slate-300 text-sm mt-2 space-y-2"></div>
+          </div>
+          <button id="step-detail-close" class="text-slate-400 hover:text-white text-lg leading-none">✕</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ LAYERS SECTION ============================ -->
+  <section id="tab-layers" class="reveal hidden">
+    <h3 class="text-2xl font-bold mb-2">🏗️ The four layers of Pandora</h3>
+    <p class="text-slate-400 text-sm mb-6">Like floors in a building — each layer has one clear job.</p>
+
+    <div class="space-y-4">
+      <!-- Layer cards -->
+      <div class="glass rounded-2xl p-6 lift border-l-4" style="border-color:#60a5fa">
+        <div class="flex items-center gap-4">
+          <div class="text-3xl">🎨</div>
+          <div class="flex-1">
+            <p class="text-xs uppercase tracking-wider text-sky-300">Layer 1 · Presentation (Client)</p>
+            <h4 class="font-semibold text-lg">What the user sees and interacts with</h4>
+            <p class="text-slate-300 text-sm">A <b>React 18 Single Page Application</b> bundled by Vite and styled with Tailwind CSS. It runs entirely in the user's browser — no server-side rendering.</p>
+            <ul class="text-slate-400 text-xs mt-2 space-y-1 list-disc pl-5">
+              <li><b>Dashboard</b> — summary cards showing record counts, recent activity, and system health.</li>
+              <li><b>ELN (Electronic Lab Notebook)</b> — upload forms for Chemicals, Samples, Screening, and Toxicology. Supports manual entry, Excel bulk upload, and SDF chemical structure files.</li>
+              <li><b>Viewer</b> — paginated data tables with search, sort, inline editing, bulk select/delete, and molecular structure preview.</li>
+              <li><b>React Router</b> handles navigation without page reloads; <b>Axios</b> handles all HTTP calls; <b>React Hot Toast</b> provides user feedback.</li>
+            </ul>
+          </div>
+          <div class="hidden md:block text-xs text-slate-500">client/src</div>
+        </div>
+      </div>
+
+      <div class="glass rounded-2xl p-6 lift border-l-4" style="border-color:#a78bfa">
+        <div class="flex items-center gap-4">
+          <div class="text-3xl">🔀</div>
+          <div class="flex-1">
+            <p class="text-xs uppercase tracking-wider text-violet-300">Layer 2 · API Gateway (Server Routes)</p>
+            <h4 class="font-semibold text-lg">The traffic controller &amp; request dispatcher</h4>
+            <p class="text-slate-300 text-sm">An <b>Express.js</b> HTTP server exposing RESTful endpoints over HTTPS on port 5942. Each route maps to a specific resource and operation.</p>
+            <ul class="text-slate-400 text-xs mt-2 space-y-1 list-disc pl-5">
+              <li><code>GET/POST/PUT/DELETE /api/chemicals</code> — CRUD operations for chemical records.</li>
+              <li><code>POST /api/chemicals/upload/excel</code> — bulk import from Excel via Multer + XLSX.</li>
+              <li><code>GET/POST /api/samples</code>, <code>/api/screening</code>, <code>/api/toxicology</code> — similar patterns for other collections.</li>
+              <li><code>GET /api/stats</code> — health check and record counts (used by the monitoring cron).</li>
+              <li><b>External API proxy:</b> can call PubChem or LabKey to enrich or sync data without exposing credentials to the frontend.</li>
+              <li>Also serves the compiled React static files (HTML/JS/CSS) so only one port is needed.</li>
+            </ul>
+          </div>
+          <div class="hidden md:block text-xs text-slate-500">server/src/routes</div>
+        </div>
+      </div>
+
+      <div class="glass rounded-2xl p-6 lift border-l-4" style="border-color:#f472b6">
+        <div class="flex items-center gap-4">
+          <div class="text-3xl">🧠</div>
+          <div class="flex-1">
+            <p class="text-xs uppercase tracking-wider text-pink-300">Layer 3 · Business Logic (Middleware &amp; Handlers)</p>
+            <h4 class="font-semibold text-lg">The brain — validation, transformation &amp; rules</h4>
+            <p class="text-slate-300 text-sm">Code that runs <em>between</em> receiving the request and writing to the database. This is where domain rules live.</p>
+            <ul class="text-slate-400 text-xs mt-2 space-y-1 list-disc pl-5">
+              <li><b>Input validation:</b> required fields, format checks (CAS regex, molecular formula patterns), duplicate ID detection.</li>
+              <li><b>File parsing:</b> XLSX library reads Excel rows; the custom SDF parser handles V2000 + V3000 molfiles, S-Groups (polymer/mixture detection), atom charges &amp; stereo, and preserves <em>every</em> regulatory field (EPA DSSTox, EU FCM, US 21 CFR, Nestlé SBL) verbatim in <code>metadata</code>.</li>
+              <li><b>External enrichment:</b> calls PubChem REST API to auto-fill formula, MW, SMILES, InChIKey from a CAS number or name.</li>
+              <li><b>Capacity enforcement:</b> rejects inserts that would exceed the ~50K performance threshold.</li>
+              <li><b>Bulk operations:</b> batch insert/update/delete with per-row error tracking and summary reports.</li>
+              <li><b>Error handling:</b> catches exceptions and returns user-friendly JSON errors without leaking stack traces.</li>
+            </ul>
+          </div>
+          <div class="hidden md:block text-xs text-slate-500">in route handlers</div>
+        </div>
+      </div>
+
+      <div class="glass rounded-2xl p-6 lift border-l-4" style="border-color:#34d399">
+        <div class="flex items-center gap-4">
+          <div class="text-3xl">💾</div>
+          <div class="flex-1">
+            <p class="text-xs uppercase tracking-wider text-emerald-300">Layer 4 · Data Persistence (Storage)</p>
+            <h4 class="font-semibold text-lg">The memory — where records live</h4>
+            <p class="text-slate-300 text-sm"><b>LowDB</b> stores all data in a single JSON file (<code>data/pandora.json</code>). Chosen for simplicity, zero-config, and human-readable backups.</p>
+            <ul class="text-slate-400 text-xs mt-2 space-y-1 list-disc pl-5">
+              <li><b>4 collections:</b> chemicals, samples, screening, toxicology — linked via chemical_id foreign key (1:many).</li>
+              <li><b>File-based:</b> backup = copy the JSON file; restore = replace it. No database server to manage.</li>
+              <li><b>Performance:</b> sub-50ms reads/writes up to ~50,000 total records across all collections.</li>
+              <li><b>Persistence:</b> mounted as a host volume in Podman so data survives container rebuilds and restarts.</li>
+              <li><b>Migration path:</b> if data grows beyond 50K, swap LowDB adapter for SQLite or PostgreSQL with minimal code changes.</li>
+            </ul>
+          </div>
+          <div class="hidden md:block text-xs text-slate-500">data/pandora.json</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ TECH STACK SECTION ============================ -->
+  <section id="tab-stack" class="reveal hidden">
+    <h3 class="text-2xl font-bold mb-2">🧰 The toolbox behind the Toolbox</h3>
+    <p class="text-slate-400 text-sm mb-6">Every piece chosen to be modern, lightweight, and easy to maintain. Here's what each does and why it was picked.</p>
+
+    <div class="grid md:grid-cols-2 gap-6">
+      <!-- Frontend -->
+      <div class="glass rounded-2xl p-6">
+        <h4 class="font-semibold text-lg mb-4 flex items-center gap-2">🎨 Frontend</h4>
+        <div class="space-y-3 text-sm">
+          <div class="glass rounded-lg p-3 lift cursor-pointer" onclick="document.getElementById('react-why').classList.toggle('hidden')">
+            <div class="flex items-center gap-2"><span class="text-xl">⚛️</span><b>React 18</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
+            <p class="text-xs text-slate-400 mt-1">Component-based UI framework from Meta. Chosen for its huge ecosystem, declarative rendering, and virtual DOM that makes updates fast without full page reloads. Industry standard for SPAs.</p>
+            <div id="react-why" class="hidden mt-3 p-3 rounded-lg border border-sky-400/30 bg-slate-900/60 text-xs space-y-2">
+              <p class="font-semibold text-sky-200">🤔 Why React over alternatives?</p>
+              <table class="w-full text-left text-slate-300">
+                <thead><tr class="text-sky-300"><th class="pb-1">Option</th><th class="pb-1">Verdict</th></tr></thead>
+                <tbody>
+                  <tr><td class="pr-2 py-0.5"><b>Vue.js</b></td><td>Great framework, but smaller talent pool at Nestlé. React devs are easier to find and onboard.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Angular</b></td><td>Full framework with TypeScript, DI, RxJS — too heavy and opinionated for a small internal tool.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Svelte</b></td><td>Innovative compiler approach, but immature ecosystem. Fewer UI component libraries available.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Vanilla JS</b></td><td>No templating, no state management, no component reuse. Maintenance nightmare at scale.</td></tr>
+                </tbody>
+              </table>
+              <p class="text-slate-400 pt-1"><b>Winner: React</b> — largest ecosystem (thousands of ready-made components), virtual DOM for fast updates, hooks for clean state management, and universal developer familiarity.</p>
+            </div>
+          </div>
+          <div class="glass rounded-lg p-3 lift cursor-pointer" onclick="document.getElementById('vite-why').classList.toggle('hidden')">
+            <div class="flex items-center gap-2"><span class="text-xl">⚡</span><b>Vite</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
+            <p class="text-xs text-slate-400 mt-1">Next-gen build tool with instant hot module replacement (HMR) during development and optimized production bundles. 10-100× faster than Webpack. Zero-config for React projects.</p>
+            <div id="vite-why" class="hidden mt-3 p-3 rounded-lg border border-amber-400/30 bg-slate-900/60 text-xs space-y-2">
+              <p class="font-semibold text-amber-200">🤔 Why Vite over alternatives?</p>
+              <table class="w-full text-left text-slate-300">
+                <thead><tr class="text-amber-300"><th class="pb-1">Option</th><th class="pb-1">Verdict</th></tr></thead>
+                <tbody>
+                  <tr><td class="pr-2 py-0.5"><b>Webpack</b></td><td>Industry workhorse but slow cold starts (10-30s), complex config files, and plugin hell.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Create React App</b></td><td>Deprecated. Uses Webpack under the hood. Slow, bloated, no longer maintained.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Parcel</b></td><td>Zero-config like Vite but slower and less ecosystem adoption.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Turbopack</b></td><td>Still in beta (Next.js only). Not production-ready for standalone React apps.</td></tr>
+                </tbody>
+              </table>
+              <p class="text-slate-400 pt-1"><b>Winner: Vite</b> — native ES modules for instant dev server startup, Rollup-based production builds, and the new standard for React/Vue/Svelte projects.</p>
+            </div>
+          </div>
+          <div class="glass rounded-lg p-3 lift cursor-pointer" onclick="document.getElementById('tailwind-why').classList.toggle('hidden')">
+            <div class="flex items-center gap-2"><span class="text-xl">🌬️</span><b>Tailwind CSS</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
+            <p class="text-xs text-slate-400 mt-1">Utility-first CSS framework. No custom CSS files needed — styling lives directly in JSX. Produces tiny production bundles via tree-shaking. Consistent design system out of the box.</p>
+            <div id="tailwind-why" class="hidden mt-3 p-3 rounded-lg border border-cyan-400/30 bg-slate-900/60 text-xs space-y-2">
+              <p class="font-semibold text-cyan-200">🤔 Why Tailwind over alternatives?</p>
+              <table class="w-full text-left text-slate-300">
+                <thead><tr class="text-cyan-300"><th class="pb-1">Option</th><th class="pb-1">Verdict</th></tr></thead>
+                <tbody>
+                  <tr><td class="pr-2 py-0.5"><b>Bootstrap</b></td><td>Pre-built components but opinionated look. Hard to customize without fighting the framework.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Plain CSS / SCSS</b></td><td>Full control but no consistency. Naming conventions (BEM) add overhead. Grows messy over time.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>CSS Modules</b></td><td>Scoped styles but still need to write CSS from scratch. No design system included.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Styled Components</b></td><td>CSS-in-JS adds runtime cost. Larger bundle size and debugging is harder.</td></tr>
+                </tbody>
+              </table>
+              <p class="text-slate-400 pt-1"><b>Winner: Tailwind</b> — co-located styling (no context switching), automatic tree-shaking (only ships used classes), responsive design built-in, and consistent spacing/color system.</p>
+            </div>
+          </div>
+          <div class="glass rounded-lg p-3 lift cursor-pointer" onclick="document.getElementById('router-why').classList.toggle('hidden')">
+            <div class="flex items-center gap-2"><span class="text-xl">🧭</span><b>React Router</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
+            <p class="text-xs text-slate-400 mt-1">Client-side routing for SPA navigation. Enables URL-based views (e.g., /chemicals, /samples) without page reloads. Supports nested routes and lazy-loading.</p>
+            <div id="router-why" class="hidden mt-3 p-3 rounded-lg border border-green-400/30 bg-slate-900/60 text-xs space-y-2">
+              <p class="font-semibold text-green-200">🤔 Why React Router?</p>
+              <table class="w-full text-left text-slate-300">
+                <thead><tr class="text-green-300"><th class="pb-1">Option</th><th class="pb-1">Verdict</th></tr></thead>
+                <tbody>
+                  <tr><td class="pr-2 py-0.5"><b>TanStack Router</b></td><td>Type-safe and modern, but newer with smaller community. Migration docs are sparse.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Wouter</b></td><td>Tiny (~1KB) but lacks nested routes, loaders, and lazy-loading support.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>No router (manual)</b></td><td>Conditional rendering works for 2 pages, not for 6+ views with deep links and browser back/forward.</td></tr>
+                </tbody>
+              </table>
+              <p class="text-slate-400 pt-1"><b>Winner: React Router</b> — de facto standard for React SPAs, supports lazy loading, nested layouts, URL params, and has 10+ years of stability.</p>
+            </div>
+          </div>
+          <div class="glass rounded-lg p-3 lift cursor-pointer" onclick="document.getElementById('axios-why').classList.toggle('hidden')">
+            <div class="flex items-center gap-2"><span class="text-xl">📡</span><b>Axios</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
+            <p class="text-xs text-slate-400 mt-1">Promise-based HTTP client with interceptors, automatic JSON parsing, and request/response transforms. Cleaner API than fetch() with built-in error handling and timeout support.</p>
+            <div id="axios-why" class="hidden mt-3 p-3 rounded-lg border border-orange-400/30 bg-slate-900/60 text-xs space-y-2">
+              <p class="font-semibold text-orange-200">🤔 Why Axios over fetch()?</p>
+              <table class="w-full text-left text-slate-300">
+                <thead><tr class="text-orange-300"><th class="pb-1">Option</th><th class="pb-1">Verdict</th></tr></thead>
+                <tbody>
+                  <tr><td class="pr-2 py-0.5"><b>Native fetch()</b></td><td>Built-in but no interceptors, no timeout, no automatic JSON parsing, doesn't reject on 4xx/5xx status.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>ky</b></td><td>Modern fetch wrapper but smaller community. Less documentation and examples.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Got / node-fetch</b></td><td>Server-side only. Don't work in browsers.</td></tr>
+                </tbody>
+              </table>
+              <p class="text-slate-400 pt-1"><b>Winner: Axios</b> — request/response interceptors (for error handling), automatic JSON, timeout support, works in both browser and Node.js, and cancellation via AbortController.</p>
+            </div>
+          </div>
+          <div class="glass rounded-lg p-3 lift cursor-pointer" onclick="document.getElementById('toast-why').classList.toggle('hidden')">
+            <div class="flex items-center gap-2"><span class="text-xl">🔔</span><b>React Hot Toast</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
+            <p class="text-xs text-slate-400 mt-1">Lightweight toast notification library (~5KB). Shows success/error/loading messages without blocking the UI. Customizable, accessible, and auto-dismisses.</p>
+            <div id="toast-why" class="hidden mt-3 p-3 rounded-lg border border-pink-400/30 bg-slate-900/60 text-xs space-y-2">
+              <p class="font-semibold text-pink-200">🤔 Why React Hot Toast?</p>
+              <table class="w-full text-left text-slate-300">
+                <thead><tr class="text-pink-300"><th class="pb-1">Option</th><th class="pb-1">Verdict</th></tr></thead>
+                <tbody>
+                  <tr><td class="pr-2 py-0.5"><b>React Toastify</b></td><td>Feature-rich but heavier (~30KB). More config needed for simple use cases.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Notistack</b></td><td>Material UI dependency. Overkill if not using MUI.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Custom solution</b></td><td>Reinventing the wheel. Accessibility, animations, stacking — non-trivial to build correctly.</td></tr>
+                </tbody>
+              </table>
+              <p class="text-slate-400 pt-1"><b>Winner: React Hot Toast</b> — ~5KB, zero dependencies, beautiful defaults, promise-based API (toast.promise()), and accessible out of the box.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Backend -->
+      <div class="glass rounded-2xl p-6">
+        <h4 class="font-semibold text-lg mb-4 flex items-center gap-2">⚙️ Backend</h4>
+        <div class="space-y-3 text-sm">
+          <div class="glass rounded-lg p-3 lift cursor-pointer" onclick="document.getElementById('node-why').classList.toggle('hidden')">
+            <div class="flex items-center gap-2"><span class="text-xl">🟢</span><b>Node.js 18 (LTS)</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
+            <p class="text-xs text-slate-400 mt-1">JavaScript runtime built on Chrome's V8 engine. Non-blocking I/O makes it perfect for API servers with many concurrent requests. Same language as the frontend = one team, one codebase.</p>
+            <div id="node-why" class="hidden mt-3 p-3 rounded-lg border border-green-400/30 bg-slate-900/60 text-xs space-y-2">
+              <p class="font-semibold text-green-200">🤔 Why Node.js over alternatives?</p>
+              <table class="w-full text-left text-slate-300">
+                <thead><tr class="text-green-300"><th class="pb-1">Option</th><th class="pb-1">Verdict</th></tr></thead>
+                <tbody>
+                  <tr><td class="pr-2 py-0.5"><b>Python (Flask/Django)</b></td><td>Great for data science but adds a second language. Django is heavy for a REST API. Slower for concurrent I/O.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Go</b></td><td>Excellent performance but compiled language, steeper learning curve, smaller web middleware ecosystem.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Java (Spring Boot)</b></td><td>Enterprise-grade but massive boilerplate, slow startup, heavy memory footprint for a simple API.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Deno / Bun</b></td><td>Modern runtimes but immature ecosystems. npm compatibility issues. Not battle-tested in production.</td></tr>
+                </tbody>
+              </table>
+              <p class="text-slate-400 pt-1"><b>Winner: Node.js</b> — same language as React (JavaScript everywhere), non-blocking I/O for handling 50-100 concurrent users, massive npm ecosystem, and LTS guarantees stability for years.</p>
+            </div>
+          </div>
+          <div class="glass rounded-lg p-3 lift cursor-pointer" id="express-card" onclick="document.getElementById('express-why').classList.toggle('hidden')">
+            <div class="flex items-center gap-2"><span class="text-xl">🚂</span><b>Express.js</b> <span class="text-xs text-indigo-300 ml-auto">▶ click for details</span></div>
+            <p class="text-xs text-slate-400 mt-1">Minimal, un-opinionated web framework. Mature (10+ years), massive middleware ecosystem, and trivial to set up REST routes. The de facto standard for Node.js APIs.</p>
+            <div id="express-why" class="hidden mt-3 p-3 rounded-lg border border-violet-400/30 bg-slate-900/60 text-xs space-y-2">
+              <p class="font-semibold text-violet-200">🤔 Why Express over alternatives?</p>
+              <table class="w-full text-left text-slate-300">
+                <thead><tr class="text-violet-300"><th class="pb-1">Option</th><th class="pb-1">Verdict</th></tr></thead>
+                <tbody class="space-y-1">
+                  <tr><td class="pr-2 py-0.5"><b>Next.js API routes</b></td><td>Overkill — includes SSR, file-based routing, React server components. Pandora's React is pre-built; no SSR needed.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Fastify</b></td><td>Faster benchmarks, but smaller plugin ecosystem. Multer, helmet, cors all built for Express first.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Koa</b></td><td>Lighter than Express but less middleware out of the box. Extra boilerplate for file uploads.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Hapi</b></td><td>More opinionated, heavier config. Good for large teams, overkill for a single-purpose API.</td></tr>
+                </tbody>
+              </table>
+              <p class="text-slate-400 pt-1"><b>Winner: Express</b> — maximum middleware compatibility (Multer, CORS, helmet), zero learning curve, 10+ years of battle-tested stability, and every Node.js developer already knows it.</p>
+              <p class="text-slate-400">⚠️ <b>React alone is NOT enough.</b> React runs in the browser — it cannot read/write files, store persistent data, handle uploads securely, or call external APIs without exposing credentials. A backend (Express) is mandatory.</p>
+            </div>
+          </div>
+          <div class="glass rounded-lg p-3 lift cursor-pointer" onclick="document.getElementById('lowdb-why').classList.toggle('hidden')">
+            <div class="flex items-center gap-2"><span class="text-xl">🗄️</span><b>LowDB</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
+            <p class="text-xs text-slate-400 mt-1">Flat-file JSON database. Zero config, no external server, human-readable data file. Chosen because Pandora needs simplicity and portability over high-concurrency writes. Easy to back up and inspect.</p>
+            <div id="lowdb-why" class="hidden mt-3 p-3 rounded-lg border border-emerald-400/30 bg-slate-900/60 text-xs space-y-2">
+              <p class="font-semibold text-emerald-200">🤔 Why LowDB over a real database?</p>
+              <table class="w-full text-left text-slate-300">
+                <thead><tr class="text-emerald-300"><th class="pb-1">Option</th><th class="pb-1">Verdict</th></tr></thead>
+                <tbody>
+                  <tr><td class="pr-2 py-0.5"><b>PostgreSQL</b></td><td>Industrial strength but requires a separate server, config, migrations, connection pooling. Overkill for &lt;50K records.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>MongoDB</b></td><td>Document DB but needs a daemon, uses significant memory, and adds operational complexity.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>SQLite</b></td><td>Good middle ground — file-based, fast. But requires native bindings (node-gyp issues in containers).</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>In-memory only</b></td><td>Data lost on restart. Not acceptable for a lab notebook.</td></tr>
+                </tbody>
+              </table>
+              <p class="text-slate-400 pt-1"><b>Winner: LowDB</b> — zero dependencies, human-readable JSON, backup = file copy, works in any environment. Migration to SQLite/PostgreSQL is easy if needed later (adapter pattern).</p>
+            </div>
+          </div>
+          <div class="glass rounded-lg p-3 lift cursor-pointer" onclick="document.getElementById('multer-why').classList.toggle('hidden')">
+            <div class="flex items-center gap-2"><span class="text-xl">📂</span><b>Multer</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
+            <p class="text-xs text-slate-400 mt-1">Express middleware for multipart/form-data (file uploads). Handles Excel and SDF file uploads with configurable size limits, file type filtering, and memory/disk storage.</p>
+            <div id="multer-why" class="hidden mt-3 p-3 rounded-lg border border-blue-400/30 bg-slate-900/60 text-xs space-y-2">
+              <p class="font-semibold text-blue-200">🤔 Why Multer?</p>
+              <table class="w-full text-left text-slate-300">
+                <thead><tr class="text-blue-300"><th class="pb-1">Option</th><th class="pb-1">Verdict</th></tr></thead>
+                <tbody>
+                  <tr><td class="pr-2 py-0.5"><b>Busboy</b></td><td>Lower-level streaming parser. More control but more boilerplate code needed.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Formidable</b></td><td>Works but not Express-native. Requires manual integration with req/res cycle.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>express-fileupload</b></td><td>Simpler API but fewer options for size limits, filtering, and storage strategies.</td></tr>
+                </tbody>
+              </table>
+              <p class="text-slate-400 pt-1"><b>Winner: Multer</b> — built specifically for Express, configurable storage (memory/disk), file size limits, MIME type filtering, and the most documented solution.</p>
+            </div>
+          </div>
+          <div class="glass rounded-lg p-3 lift cursor-pointer" onclick="document.getElementById('xlsx-why').classList.toggle('hidden')">
+            <div class="flex items-center gap-2"><span class="text-xl">📊</span><b>XLSX (SheetJS)</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
+            <p class="text-xs text-slate-400 mt-1">Pure-JS Excel parser supporting .xlsx, .xls, .csv. Reads uploaded spreadsheets into JSON arrays for bulk import. No native dependencies — works in any environment.</p>
+            <div id="xlsx-why" class="hidden mt-3 p-3 rounded-lg border border-teal-400/30 bg-slate-900/60 text-xs space-y-2">
+              <p class="font-semibold text-teal-200">🤔 Why SheetJS?</p>
+              <table class="w-full text-left text-slate-300">
+                <thead><tr class="text-teal-300"><th class="pb-1">Option</th><th class="pb-1">Verdict</th></tr></thead>
+                <tbody>
+                  <tr><td class="pr-2 py-0.5"><b>ExcelJS</b></td><td>Good for writing Excel files but slower for read-only parsing. Larger memory footprint.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>csv-parser</b></td><td>CSV only — doesn't handle .xlsx or .xls formats that scientists commonly use.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Python (openpyxl)</b></td><td>Would require a second runtime. Can't call from Node.js directly.</td></tr>
+                </tbody>
+              </table>
+              <p class="text-slate-400 pt-1"><b>Winner: SheetJS (XLSX)</b> — pure JavaScript (no native bindings), supports all Excel formats + CSV, fast parsing, and works identically in browser and Node.js.</p>
+            </div>
+          </div>
+          <div class="glass rounded-lg p-3 lift cursor-pointer" onclick="document.getElementById('sdf-why').classList.toggle('hidden')">
+            <div class="flex items-center gap-2"><span class="text-xl">🧬</span><b>SDF Parser</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
+            <p class="text-xs text-slate-400 mt-1">In-house V2000/V3000 molfile + SDF parser (<code>server/src/utils/sdfParser.js</code>). Extracts atoms, bonds, S-Groups (SRU/MUL/COP/MIX/SUP), formal charges, and stereo flags; derives polymer / mixture / stereochemistry intelligence; and preserves every <code>&gt; &lt;FIELD&gt;</code> data block in <code>metadata</code>. Validated against 77 EPA/Nestlé records (24 unit tests, all passing).</p>
+            <div id="sdf-why" class="hidden mt-3 p-3 rounded-lg border border-pink-400/30 bg-slate-900/60 text-xs space-y-2">
+              <p class="font-semibold text-pink-200">🤔 Why a custom parser?</p>
+              <table class="w-full text-left text-slate-300">
+                <thead><tr class="text-pink-300"><th class="pb-1">Option</th><th class="pb-1">Verdict</th></tr></thead>
+                <tbody>
+                  <tr><td class="pr-2 py-0.5"><b>RDKit-JS / OpenBabel</b></td><td>Powerful but heavy (WASM/native), and they normalize/lose vendor regulatory fields we need verbatim.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>openchemlib</b></td><td>Good structural support but does not surface S-Group polymer labels or preserve unknown SDF properties.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Regex-only</b></td><td>Too fragile for V3000 continuation lines, multi-line S-Groups, and stereo collections.</td></tr>
+                </tbody>
+              </table>
+              <p class="font-semibold text-pink-200 pt-1">3-tier extraction strategy</p>
+              <ul class="list-disc pl-5 text-slate-300 space-y-0.5">
+                <li><b>Tier 1 — Named fields:</b> <code>dtxsid</code>, <code>preferred_name</code>, <code>monoisotopic_mass</code>, <code>ms_ready_smiles</code>, <code>synonyms[]</code>, CAS, InChI, SMILES (50+ aliases, case-insensitive).</li>
+                <li><b>Tier 2 — Catch-all:</b> every other <code>&gt; &lt;FIELD&gt;</code> kept in <code>metadata</code> (EU FCM code, US 21 CFR, Nestlé SBL, ADI/TDI, SML, …).</li>
+                <li><b>Tier 3 — Structural intelligence:</b> derived <code>structural{}</code> object: <code>isPolymer</code>, <code>polymerLabels[]</code>, <code>isMixture</code>, <code>componentCount</code>, <code>hasStereochemistry</code>, <code>totalCharge</code>, <code>sGroupTypes[]</code>.</li>
+              </ul>
+              <p class="text-slate-400 pt-1"><b>Winner: custom parser</b> — pure-JS (no native deps), lossless metadata preservation, and aware of regulatory polymer/mixture conventions used by EPA DSSTox and Nestlé.</p>
+            </div>
+          </div>
+          <div class="glass rounded-lg p-3 lift cursor-pointer" onclick="document.getElementById('uuid-why').classList.toggle('hidden')">
+            <div class="flex items-center gap-2"><span class="text-xl">🆔</span><b>UUID</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
+            <p class="text-xs text-slate-400 mt-1">Generates universally unique identifiers (v4) for every record. Guarantees no collisions even across distributed systems. No auto-increment counter needed.</p>
+            <div id="uuid-why" class="hidden mt-3 p-3 rounded-lg border border-indigo-400/30 bg-slate-900/60 text-xs space-y-2">
+              <p class="font-semibold text-indigo-200">🤔 Why UUID over auto-increment?</p>
+              <table class="w-full text-left text-slate-300">
+                <thead><tr class="text-indigo-300"><th class="pb-1">Option</th><th class="pb-1">Verdict</th></tr></thead>
+                <tbody>
+                  <tr><td class="pr-2 py-0.5"><b>Auto-increment (1,2,3…)</b></td><td>Requires centralized counter. Breaks during bulk imports, merges, or distributed writes.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>nanoid</b></td><td>Shorter IDs but less universally recognized. UUID is a standard (RFC 4122).</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Timestamp-based</b></td><td>Collisions if two records created in the same millisecond.</td></tr>
+                </tbody>
+              </table>
+              <p class="text-slate-400 pt-1"><b>Winner: UUID v4</b> — cryptographically random, zero collision risk, no coordination needed, and universally understood across all systems.</p>
+            </div>
+          </div>
+          <div class="glass rounded-lg p-3 lift cursor-pointer" onclick="document.getElementById('pubchem-why').classList.toggle('hidden')">
+            <div class="flex items-center gap-2"><span class="text-xl">🌐</span><b>PubChem REST API</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
+            <p class="text-xs text-slate-400 mt-1">Free NIH chemical database (100M+ compounds). Used to auto-fill molecular formula, weight, SMILES, and InChIKey from a CAS number or compound name. Eliminates manual data entry errors.</p>
+            <div id="pubchem-why" class="hidden mt-3 p-3 rounded-lg border border-cyan-400/30 bg-slate-900/60 text-xs space-y-2">
+              <p class="font-semibold text-cyan-200">🤔 Why PubChem?</p>
+              <table class="w-full text-left text-slate-300">
+                <thead><tr class="text-cyan-300"><th class="pb-1">Option</th><th class="pb-1">Verdict</th></tr></thead>
+                <tbody>
+                  <tr><td class="pr-2 py-0.5"><b>ChemSpider</b></td><td>Requires API key registration. Smaller database. Rate limits are stricter.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>ChEBI</b></td><td>Focused on biological chemicals only. Smaller coverage for food/pharma compounds.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Local database</b></td><td>Would need regular updates. 100M+ compounds = massive storage. Maintenance burden.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Manual entry</b></td><td>Error-prone. Scientists shouldn't type molecular formulas by hand.</td></tr>
+                </tbody>
+              </table>
+              <p class="text-slate-400 pt-1"><b>Winner: PubChem</b> — free, no API key required, 100M+ compounds, fast REST API (~200ms), returns formula/MW/SMILES/InChIKey/IUPAC name in one call.</p>
+            </div>
+          </div>
+          <div class="glass rounded-lg p-3 lift cursor-pointer" onclick="document.getElementById('labkey-why').classList.toggle('hidden')">
+            <div class="flex items-center gap-2"><span class="text-xl">🔗</span><b>LabKey Server API</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
+            <p class="text-xs text-slate-400 mt-1">Nestlé's enterprise LIMS platform. Integration allows syncing samples and experiment metadata between Pandora and the central LabKey instance. Future-proofs data sharing.</p>
+            <div id="labkey-why" class="hidden mt-3 p-3 rounded-lg border border-rose-400/30 bg-slate-900/60 text-xs space-y-2">
+              <p class="font-semibold text-rose-200">🤔 Why LabKey integration?</p>
+              <p class="text-slate-300">LabKey is Nestlé's existing enterprise LIMS (Laboratory Information Management System). Pandora doesn't replace it — it complements it:</p>
+              <ul class="list-disc pl-4 text-slate-300 space-y-1">
+                <li><b>Pandora</b> = fast, lightweight tool for daily chemical/sample management by individual scientists.</li>
+                <li><b>LabKey</b> = enterprise system of record for cross-team data sharing, compliance, and auditing.</li>
+                <li>Integration allows pushing validated Pandora records into LabKey for long-term archival and sharing.</li>
+                <li>Avoids double data entry — enter once in Pandora, sync to LabKey automatically.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DevOps -->
+      <div class="glass rounded-2xl p-6 md:col-span-2">
+        <h4 class="font-semibold text-lg mb-4 flex items-center gap-2">🚀 Delivery &amp; Ops</h4>
+        <div class="grid md:grid-cols-2 gap-3 text-sm">
+          <div class="glass rounded-lg p-4 lift cursor-pointer" onclick="document.getElementById('podman-why').classList.toggle('hidden')">
+            <div class="flex items-center gap-2"><span class="text-xl">📦</span><b>Podman (Docker-compatible)</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
+            <p class="text-xs text-slate-400 mt-1">Rootless container engine. Packages the entire app (Node, React build, certs) into one portable image. Identical behavior on dev and production. No "works on my machine" issues. Chosen over Docker for daemonless, rootless security.</p>
+            <div id="podman-why" class="hidden mt-3 p-3 rounded-lg border border-purple-400/30 bg-slate-900/60 text-xs space-y-2">
+              <p class="font-semibold text-purple-200">🤔 Why Podman over Docker?</p>
+              <table class="w-full text-left text-slate-300">
+                <thead><tr class="text-purple-300"><th class="pb-1">Option</th><th class="pb-1">Verdict</th></tr></thead>
+                <tbody>
+                  <tr><td class="pr-2 py-0.5"><b>Docker</b></td><td>Requires a daemon running as root. Security risk on shared servers. Licensing concerns for enterprise.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Bare metal (no container)</b></td><td>Works but "it works on my machine" issues. No isolation, dependency conflicts with other apps on the server.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Kubernetes</b></td><td>Massive overkill for a single-container app. Adds operational complexity without benefit here.</td></tr>
+                </tbody>
+              </table>
+              <p class="text-slate-400 pt-1"><b>Winner: Podman</b> — daemonless (no root process), rootless containers (security), Docker-compatible CLI (same commands), and already approved on Nestlé's infrastructure.</p>
+            </div>
+          </div>
+          <div class="glass rounded-lg p-4 lift cursor-pointer" onclick="document.getElementById('https-why').classList.toggle('hidden')">
+            <div class="flex items-center gap-2"><span class="text-xl">🔒</span><b>HTTPS / TLS 1.3</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
+            <p class="text-xs text-slate-400 mt-1">End-to-end encryption using Nestlé's official SSL certificates. Protects chemical data and user sessions in transit. Required for corporate network compliance and browser trust.</p>
+            <div id="https-why" class="hidden mt-3 p-3 rounded-lg border border-pink-400/30 bg-slate-900/60 text-xs space-y-2">
+              <p class="font-semibold text-pink-200">🤔 Why HTTPS at the app level?</p>
+              <table class="w-full text-left text-slate-300">
+                <thead><tr class="text-pink-300"><th class="pb-1">Option</th><th class="pb-1">Verdict</th></tr></thead>
+                <tbody>
+                  <tr><td class="pr-2 py-0.5"><b>Reverse proxy (Nginx)</b></td><td>Common pattern but adds another component to manage. Single container is simpler.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>HTTP only</b></td><td>Browsers show "Not Secure" warning. Corporate policy forbids unencrypted traffic.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>Let's Encrypt</b></td><td>Great for public sites but Pandora is internal-only. Nestlé has its own CA.</td></tr>
+                </tbody>
+              </table>
+              <p class="text-slate-400 pt-1"><b>Winner: Node.js native HTTPS</b> — Express serves TLS directly using Nestlé's official certs. No extra proxy needed. One port, one process, end-to-end encrypted.</p>
+            </div>
+          </div>
+          <div class="glass rounded-lg p-4 lift cursor-pointer" onclick="document.getElementById('cron-why').classList.toggle('hidden')">
+            <div class="flex items-center gap-2"><span class="text-xl">⏰</span><b>Cron + monitor.sh</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
+            <p class="text-xs text-slate-400 mt-1">System cron job runs every 5 minutes. Hits the /api/stats health endpoint; if it fails, automatically restarts the container. Simple, reliable, zero-dependency monitoring.</p>
+            <div id="cron-why" class="hidden mt-3 p-3 rounded-lg border border-yellow-400/30 bg-slate-900/60 text-xs space-y-2">
+              <p class="font-semibold text-yellow-200">🤔 Why cron over monitoring tools?</p>
+              <table class="w-full text-left text-slate-300">
+                <thead><tr class="text-yellow-300"><th class="pb-1">Option</th><th class="pb-1">Verdict</th></tr></thead>
+                <tbody>
+                  <tr><td class="pr-2 py-0.5"><b>Prometheus + Grafana</b></td><td>Powerful but requires deploying 2 extra services. Overkill for one container.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>systemd watchdog</b></td><td>Good but Podman containers aren't systemd services by default. Extra config needed.</td></tr>
+                  <tr><td class="pr-2 py-0.5"><b>No monitoring</b></td><td>App crashes silently. Nobody notices until a user reports it hours later.</td></tr>
+                </tbody>
+              </table>
+              <p class="text-slate-400 pt-1"><b>Winner: cron + shell script</b> — zero dependencies, works on any Linux, 5 lines of bash, and has been reliable for decades. KISS principle.</p>
+            </div>
+          </div>
+          <div class="glass rounded-lg p-4 lift cursor-pointer" onclick="document.getElementById('restart-why').classList.toggle('hidden')">
+            <div class="flex items-center gap-2"><span class="text-xl">📈</span><b>Auto-restart &amp; Self-healing</b> <span class="text-xs text-indigo-300 ml-auto">▶ click</span></div>
+            <p class="text-xs text-slate-400 mt-1">Podman's --restart=always policy + the cron monitor ensure the app recovers from crashes, OOM kills, or host reboots automatically. Zero manual intervention needed.</p>
+            <div id="restart-why" class="hidden mt-3 p-3 rounded-lg border border-red-400/30 bg-slate-900/60 text-xs space-y-2">
+              <p class="font-semibold text-red-200">🤔 Why self-healing matters</p>
+              <p class="text-slate-300">Without auto-restart, a single crash at 2 AM means the app is down until someone manually intervenes the next morning. With the dual-layer approach:</p>
+              <ul class="list-disc pl-4 text-slate-300 space-y-1">
+                <li><b>Layer 1:</b> Podman's <code>--restart=always</code> handles immediate crashes (process exit, OOM kill).</li>
+                <li><b>Layer 2:</b> Cron monitor catches "zombie" states where the process is alive but unresponsive (hung connections, deadlocks).</li>
+                <li><b>Result:</b> Maximum downtime ≈ 5 minutes (one cron cycle). No pager, no manual SSH needed.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Why this stack? -->
+      <div class="glass rounded-2xl p-6 md:col-span-2 border border-indigo-400/20">
+        <h4 class="font-semibold text-lg mb-3 flex items-center gap-2">💡 Why this particular stack?</h4>
+        <div class="grid md:grid-cols-3 gap-4 text-xs text-slate-300">
+          <div>
+            <p class="font-semibold text-indigo-200 mb-1">🎯 Simplicity</p>
+            <p>One language (JavaScript) for both frontend and backend. One JSON file for the database. One container for deployment. Minimal moving parts = minimal failure points.</p>
+          </div>
+          <div>
+            <p class="font-semibold text-indigo-200 mb-1">🚀 Speed of development</p>
+            <p>React + Vite hot reload, Express minimal boilerplate, LowDB zero-config. A new feature can go from idea to production in hours, not weeks.</p>
+          </div>
+          <div>
+            <p class="font-semibold text-indigo-200 mb-1">📦 Portability</p>
+            <p>The entire app runs in a single container. Move it to any Linux server with Podman/Docker and it works identically. No database server, no cloud dependencies.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ DATA MODEL SECTION ============================ -->
+  <section id="tab-data" class="reveal hidden">
+    <h3 class="text-2xl font-bold mb-2">🗄️ How the data is organised</h3>
+    <p class="text-slate-400 text-sm mb-6">Four collections. One central link: every record points back to a chemical.</p>
+
+    <div class="glass rounded-3xl p-6 md:p-10">
+      <svg viewBox="0 0 900 420" class="w-full">
+        <defs>
+          <linearGradient id="gline" x1="0" x2="1">
+            <stop offset="0" stop-color="#a78bfa"/>
+            <stop offset="1" stop-color="#34d399"/>
+          </linearGradient>
+        </defs>
+
+        <!-- Connecting lines -->
+        <line x1="450" y1="140" x2="180" y2="320" stroke="url(#gline)" stroke-width="2" class="flow-path"/>
+        <line x1="450" y1="140" x2="450" y2="320" stroke="url(#gline)" stroke-width="2" class="flow-path"/>
+        <line x1="450" y1="140" x2="720" y2="320" stroke="url(#gline)" stroke-width="2" class="flow-path"/>
+
+        <!-- Chemicals (center) -->
+        <g transform="translate(360,60)">
+          <rect width="180" height="100" rx="16" fill="#3b0764" stroke="#a78bfa" stroke-width="2"/>
+          <text x="90" y="40" text-anchor="middle" font-size="30">🧪</text>
+          <text x="90" y="68" text-anchor="middle" fill="#ede9fe" font-weight="700" font-size="14">Chemicals</text>
+          <text x="90" y="86" text-anchor="middle" fill="#c4b5fd" font-size="11">up to 50,000 records</text>
+        </g>
+
+        <!-- Samples -->
+        <g transform="translate(90,310)">
+          <rect width="180" height="90" rx="14" fill="#0c4a6e" stroke="#38bdf8" stroke-width="2"/>
+          <text x="90" y="36" text-anchor="middle" font-size="24">🧫</text>
+          <text x="90" y="60" text-anchor="middle" fill="#e0f2fe" font-weight="700" font-size="13">Samples</text>
+          <text x="90" y="78" text-anchor="middle" fill="#7dd3fc" font-size="10">up to 50,000 records</text>
+        </g>
+
+        <!-- Screening -->
+        <g transform="translate(360,310)">
+          <rect width="180" height="90" rx="14" fill="#7c2d12" stroke="#fb923c" stroke-width="2"/>
+          <text x="90" y="36" text-anchor="middle" font-size="24">🔬</text>
+          <text x="90" y="60" text-anchor="middle" fill="#fed7aa" font-weight="700" font-size="13">Screening</text>
+          <text x="90" y="78" text-anchor="middle" fill="#fdba74" font-size="10">up to 50,000 records</text>
+        </g>
+
+        <!-- Toxicology -->
+        <g transform="translate(630,310)">
+          <rect width="180" height="90" rx="14" fill="#064e3b" stroke="#34d399" stroke-width="2"/>
+          <text x="90" y="36" text-anchor="middle" font-size="24">☣️</text>
+          <text x="90" y="60" text-anchor="middle" fill="#d1fae5" font-weight="700" font-size="13">Toxicology</text>
+          <text x="90" y="78" text-anchor="middle" fill="#6ee7b7" font-size="10">up to 50,000 records</text>
+        </g>
+
+        <!-- 1:N labels -->
+        <text x="270" y="240" fill="#94a3b8" font-size="11">1 : many</text>
+        <text x="465" y="240" fill="#94a3b8" font-size="11">1 : many</text>
+        <text x="640" y="240" fill="#94a3b8" font-size="11">1 : many</text>
+      </svg>
+
+      <div class="mt-6 grid md:grid-cols-2 gap-4 text-sm">
+        <div class="glass rounded-xl p-4">
+          <p class="font-semibold mb-1">📚 The ELN module</p>
+          <p class="text-slate-400 text-xs">Lab notebook for uploading Chemicals, Samples, Screening, and Toxicology — manually or by Excel/SDF file.</p>
+        </div>
+        <div class="glass rounded-xl p-4">
+          <p class="font-semibold mb-1">🔍 The Viewer module</p>
+          <p class="text-slate-400 text-xs">Search, paginate, bulk-edit, and inspect records with molecular structure preview.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ SECURITY SECTION ============================ -->
+  <section id="tab-security" class="reveal hidden">
+    <h3 class="text-2xl font-bold mb-2">🛡️ Keeping data safe</h3>
+    <p class="text-slate-400 text-sm mb-6">Defense in depth — multiple layers, simple to explain.</p>
+
+    <div class="grid md:grid-cols-3 gap-4">
+      <div class="glass rounded-2xl p-5 lift">
+        <div class="text-3xl pulse-ring relative inline-block text-pink-400">🔒</div>
+        <h4 class="font-semibold mt-3">HTTPS / TLS</h4>
+        <p class="text-slate-400 text-sm">All traffic encrypted using Nestlé's official SSL certificates.</p>
+      </div>
+      <div class="glass rounded-2xl p-5 lift">
+        <div class="text-3xl">🔑</div>
+        <h4 class="font-semibold mt-3">Private keys protected</h4>
+        <p class="text-slate-400 text-sm">Certificates kept out of git; private key locked to <code>chmod 600</code>.</p>
+      </div>
+      <div class="glass rounded-2xl p-5 lift">
+        <div class="text-3xl">🧪</div>
+        <h4 class="font-semibold mt-3">Input validation</h4>
+        <p class="text-slate-400 text-sm">Every API request is checked server-side before touching data.</p>
+      </div>
+      <div class="glass rounded-2xl p-5 lift">
+        <div class="text-3xl">🌐</div>
+        <h4 class="font-semibold mt-3">CORS policy</h4>
+        <p class="text-slate-400 text-sm">Only approved origins may talk to the API.</p>
+      </div>
+      <div class="glass rounded-2xl p-5 lift">
+        <div class="text-3xl">📤</div>
+        <h4 class="font-semibold mt-3">Upload limits</h4>
+        <p class="text-slate-400 text-sm">Files capped at 100 MB to prevent abuse.</p>
+      </div>
+      <div class="glass rounded-2xl p-5 lift border border-dashed border-amber-400/40">
+        <div class="text-3xl">🪪</div>
+        <h4 class="font-semibold mt-3">Coming soon: SSO</h4>
+        <p class="text-slate-400 text-sm">Single Sign-On + role-based access + audit logging.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ DEPLOYMENT SECTION ============================ -->
+  <section id="tab-deploy" class="reveal hidden">
+    <h3 class="text-2xl font-bold mb-2">🚀 Where Pandora lives</h3>
+    <p class="text-slate-400 text-sm mb-6">A self-contained container that heals itself.</p>
+
+    <div class="glass rounded-3xl p-6 md:p-10">
+      <svg viewBox="0 0 1000 460" class="w-full">
+        <!-- Server -->
+        <g>
+          <rect x="80" y="60" width="840" height="360" rx="22" fill="#0f172a" stroke="#475569" stroke-width="2"/>
+          <text x="110" y="90" fill="#94a3b8" font-size="12">🖥️ Host server · nr-ubp-dev-02.nihs.ch.nestle.com</text>
+        </g>
+
+        <!-- Container -->
+        <g>
+          <rect x="130" y="120" width="540" height="260" rx="18" fill="#1e293b" stroke="#a78bfa" stroke-width="2" stroke-dasharray="6 4"/>
+          <text x="155" y="145" fill="#c4b5fd" font-size="13" font-weight="700">📦 Podman Container · port 5942</text>
+
+          <!-- Express -->
+          <rect x="160" y="170" width="220" height="80" rx="12" fill="#3b0764" stroke="#a78bfa" stroke-width="1.5"/>
+          <text x="270" y="200" text-anchor="middle" font-size="22">🟢</text>
+          <text x="270" y="222" text-anchor="middle" fill="#ede9fe" font-size="12" font-weight="600">Node + Express</text>
+          <text x="270" y="238" text-anchor="middle" fill="#94a3b8" font-size="10">serves React + API</text>
+
+          <!-- Data volume -->
+          <rect x="410" y="170" width="220" height="80" rx="12" fill="#064e3b" stroke="#34d399" stroke-width="1.5"/>
+          <text x="520" y="200" text-anchor="middle" font-size="22">💾</text>
+          <text x="520" y="222" text-anchor="middle" fill="#d1fae5" font-size="12" font-weight="600">Data volume</text>
+          <text x="520" y="238" text-anchor="middle" fill="#94a3b8" font-size="10">pandora.json (persisted)</text>
+
+          <!-- Certs -->
+          <rect x="160" y="280" width="470" height="70" rx="12" fill="#831843" stroke="#f472b6" stroke-width="1.5"/>
+          <text x="395" y="310" text-anchor="middle" font-size="20">🔐</text>
+          <text x="395" y="332" text-anchor="middle" fill="#fbcfe8" font-size="12" font-weight="600">SSL certs volume (read-only)</text>
+        </g>
+
+        <!-- Monitor cron -->
+        <g>
+          <rect x="720" y="170" width="180" height="100" rx="14" fill="#1e1b4b" stroke="#818cf8" stroke-width="1.5"/>
+          <text x="810" y="205" text-anchor="middle" font-size="24">⏰</text>
+          <text x="810" y="230" text-anchor="middle" fill="#e0e7ff" font-size="12" font-weight="600">monitor.sh</text>
+          <text x="810" y="248" text-anchor="middle" fill="#94a3b8" font-size="10">cron · every 5 min</text>
+        </g>
+
+        <!-- Restart loop arrow -->
+        <path d="M 720 290 C 660 320, 600 320, 540 320" stroke="#f472b6" stroke-width="2" fill="none" class="flow-path" marker-end="url(#arrow)"/>
+        <text x="600" y="345" fill="#f9a8d4" font-size="10">restart if unhealthy</text>
+
+        <!-- User outside -->
+        <g transform="translate(870,300)">
+          <circle r="22" fill="#1e1b4b" stroke="#818cf8" stroke-width="2"/>
+          <text y="6" text-anchor="middle" font-size="20">👤</text>
+        </g>
+        <path d="M 870 300 C 770 250, 720 240, 670 230" stroke="#38bdf8" stroke-width="2" fill="none" class="flow-path" marker-end="url(#arrow)"/>
+        <text x="760" y="220" fill="#7dd3fc" font-size="10">🔒 HTTPS</text>
+      </svg>
+
+      <div class="mt-6 grid md:grid-cols-3 gap-3 text-sm">
+        <div class="glass rounded-xl p-4">
+          <p class="font-semibold">🔁 Self-healing</p>
+          <p class="text-xs text-slate-400">Cron checks the API every 5 minutes and restarts the container if it stops responding.</p>
+        </div>
+        <div class="glass rounded-xl p-4">
+          <p class="font-semibold">💾 Safe data</p>
+          <p class="text-xs text-slate-400">The database lives on a host volume — data survives container restarts and upgrades.</p>
+        </div>
+        <div class="glass rounded-xl p-4">
+          <p class="font-semibold">🔐 Read-only certs</p>
+          <p class="text-xs text-slate-400">SSL certificates are mounted read-only so they can't be tampered with.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="text-center text-xs text-slate-500 py-12">
+    <p>Pandora Toolbox 2.0 · Nestlé Research · Computational Sciences · Interactive architecture · v1.0</p>
+    <p class="mt-1">Built using React, Express, LowDB &amp; Podman.</p>
+  </footer>
+</main>
+
+<script>
+  // Tabs
+  const tabs = document.querySelectorAll('.tab-btn');
+  const sections = {
+    flow: document.getElementById('tab-flow'),
+    layers: document.getElementById('tab-layers'),
+    stack: document.getElementById('tab-stack'),
+    data: document.getElementById('tab-data'),
+    security: document.getElementById('tab-security'),
+    deploy: document.getElementById('tab-deploy'),
+  };
+  tabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      tabs.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const target = btn.dataset.tab;
+      Object.entries(sections).forEach(([k, el]) => {
+        el.classList.toggle('hidden', k !== target);
+        if (k === target) {
+          el.classList.add('visible');
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+  });
+
+  // Reveal-on-scroll
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // ===== Clickable diagram nodes =====
+  const nodeInfo = {
+    user: {
+      title: '👤 User — The starting point',
+      body: 'A scientist or project manager interacts with Pandora through a web browser. ' +
+            'No installation is needed — only a URL and Nestlé network access. The user uploads chemical/sample ' +
+            'files, searches the database, edits records in bulk, and inspects molecular structures. ' +
+            'Every action they take becomes an event that the React app captures and turns into a secure API call.'
+    },
+    react: {
+      title: '⚛️ React SPA — The face of Pandora',
+      body: 'A Single Page Application built with React 18 and bundled by Vite. It runs entirely inside the ' +
+            'user\'s browser. It draws the Dashboard, the ELN upload screens, and the Viewer tables, handles ' +
+            'forms and validation in real time, and never reloads the page — instead it asks the API for fresh ' +
+            'data using Axios over HTTPS, then re-renders only what changed.'
+    },
+    express: {
+      title: '🟢 Express API — The traffic controller',
+      body: 'A Node.js 18 server using the Express framework. It exposes REST endpoints like /api/chemicals, ' +
+            '/api/samples, /api/screening and /api/toxicology. Its jobs: receive requests, validate the data, ' +
+            'parse Excel/SDF uploads (XLSX & Multer), apply business rules (unique IDs, capacity limits), ' +
+            'and talk to the database. It can also call external APIs like PubChem to auto-fill chemical ' +
+            'properties (formula, MW, SMILES, InChIKey) from a CAS number or compound name. ' +
+            'It also serves the compiled React app to the browser on port 5942.'
+    },
+    db: {
+      title: '🗄️ LowDB — The single-file database',
+      body: 'A lightweight JSON-based database stored as one file: pandora.json. It holds four collections — ' +
+            'chemicals, samples, screening and toxicology — with a one-to-many link from each chemical to its ' +
+            'related records. Easy to back up (just copy the file), easy to inspect, and performant up to ' +
+            '~50,000 total records. Beyond that, consider migrating to SQLite or PostgreSQL. The file lives on a persistent volume so data survives container restarts.'
+    },
+    pubchem: {
+      title: '🌐 PubChem API — External chemical database',
+      body: 'PubChem (pubchem.ncbi.nlm.nih.gov) is a free NIH database with 100M+ compounds. Pandora can call it ' +
+            'to auto-fill chemical properties: given a CAS number or compound name, PubChem returns the molecular ' +
+            'formula, weight, SMILES, InChIKey, and IUPAC name. This saves manual data entry and ensures accuracy. ' +
+            'Example: entering CAS "58-08-2" auto-fills Caffeine, C₈H₁₀N₄O₂, MW 194.19. The call goes from the ' +
+            'Express server to PubChem\'s REST API and takes ~200ms.'
+    }
+  };
+
+  const nodeDetail = document.getElementById('node-detail');
+  const nodeTitle = document.getElementById('node-detail-title');
+  const nodeBody = document.getElementById('node-detail-body');
+  document.querySelectorAll('.node').forEach(n => {
+    n.addEventListener('click', () => {
+      const info = nodeInfo[n.dataset.info];
+      if (!info) return;
+      nodeTitle.textContent = info.title;
+      nodeBody.textContent = info.body;
+      nodeDetail.classList.remove('hidden');
+      nodeDetail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+    // hover glow
+    n.addEventListener('mouseenter', () => {
+      const rect = n.querySelector('rect');
+      rect.setAttribute('stroke-width', '3.5');
+    });
+    n.addEventListener('mouseleave', () => {
+      const rect = n.querySelector('rect');
+      rect.setAttribute('stroke-width', '2');
+    });
+  });
+  document.getElementById('node-detail-close').addEventListener('click', () => nodeDetail.classList.add('hidden'));
+
+  // ===== Clickable numbered steps =====
+  const stepInfo = {
+    '1': {
+      title: '① User Interaction — What happens when you click',
+      html: `
+        <p>The user does something on the page: clicks <b>"Upload Chemicals"</b>, types a search term, hits <b>Save</b>,
+        or selects rows to bulk-edit. Behind the scenes:</p>
+        <ul class="list-disc pl-5 space-y-1">
+          <li>React captures the event (onClick, onChange, onSubmit).</li>
+          <li>Local form state is validated instantly — for example, the chemical ID must not be empty.</li>
+          <li>A loading spinner or toast notification gives feedback within milliseconds.</li>
+          <li>No page reload happens — this is what makes the app feel like a desktop tool.</li>
+        </ul>
+        <p class="text-xs text-slate-400">Simple explanation: this is the moment the user's intent is captured.</p>
+      `
+    },
+    '2': {
+      title: '② Secure API Call — Travelling over the network',
+      html: `
+        <p>React doesn't store data itself — it asks the backend. The Axios HTTP client packages the request and sends it
+        over the network:</p>
+        <ul class="list-disc pl-5 space-y-1">
+          <li>The request is encrypted with <b>HTTPS / TLS</b> using Nestlé's official SSL certificate.</li>
+          <li>Examples: <code>GET /api/chemicals?search=caffeine</code>, <code>POST /api/samples</code>, <code>POST /api/chemicals/upload/excel</code>.</li>
+          <li>Files (Excel, SDF) are sent as multipart form-data — same way a browser uploads a photo.</li>
+          <li>CORS rules ensure only the approved Pandora frontend can call the API.</li>
+        </ul>
+        <p class="text-xs text-slate-400">Simple Explanation: a secure, encrypted message travels from the browser to the server.</p>
+      `
+    },
+    '3': {
+      title: '③ Business Logic & Database — The real work',
+      html: `
+        <p>The Express API receives the request and runs the business rules before touching any data:</p>
+        <ul class="list-disc pl-5 space-y-1">
+          <li><b>Validation:</b> required fields present, formats correct, IDs unique, total record count within the 50K performance threshold.</li>
+          <li><b>File parsing:</b> XLSX parses Excel spreadsheets, the SDF parser reads chemical structure files.</li>
+          <li><b>External API lookup:</b> If a CAS number or name is provided, the server can call <b>PubChem</b> (<code>pubchem.ncbi.nlm.nih.gov</code>) to auto-fill formula, MW, SMILES, and InChIKey.</li>
+          <li><b>Database operation:</b> LowDB reads or writes to <code>pandora.json</code>. Inserts, updates, bulk deletes — all happen here.</li>
+          <li><b>Error handling:</b> if anything goes wrong, a clean error message is prepared (never leaking technical details).</li>
+        </ul>
+        <p class="text-xs text-slate-400">Simple Explanation: the server checks the request, does the job, and saves the result.</p>
+      `
+    },
+    '4': {
+      title: '④ Response & UI Update — Closing the loop',
+      html: `
+        <p>The API sends a JSON response back to the browser. React reacts (literally) to it:</p>
+        <ul class="list-disc pl-5 space-y-1">
+          <li>For a read: the table, dashboard cards, or detail modal are populated with the new data.</li>
+          <li>For a write: a success toast appears ("Chemical saved ✓") and the list refreshes.</li>
+          <li>For an upload: a summary panel shows how many rows were inserted, updated, or rejected.</li>
+          <li>If the API returned an error, a red toast displays a friendly message.</li>
+        </ul>
+        <p class="text-xs text-slate-400">Simple Explanation: the page updates instantly, with no reload — the user feels the change happened immediately.</p>
+      `
+    }
+  };
+
+  const stepDetail = document.getElementById('step-detail');
+  const stepTitle = document.getElementById('step-detail-title');
+  const stepBody = document.getElementById('step-detail-body');
+  document.querySelectorAll('.step-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const info = stepInfo[card.dataset.step];
+      if (!info) return;
+      stepTitle.textContent = info.title;
+      stepBody.innerHTML = info.html;
+      stepDetail.classList.remove('hidden');
+      stepDetail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  });
+  document.getElementById('step-detail-close').addEventListener('click', () => stepDetail.classList.add('hidden'));
+</script>
+</body>
+</html>
+
+

@@ -1,0 +1,26 @@
+{
+  "name": "pandora-toolbox",
+  "version": "2.0.0",
+  "description": "Pandora Toolbox 2.0 - Chemical and Sample Management System",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "client": "cd client && npm run dev",
+    "server": "cd server && npm run dev",
+    "build": "cd client && npm run build",
+    "start": "cd server && npm start",
+    "test": "cd server && npm test",
+    "install:all": "npm install && cd client && npm install && cd ../server && npm install"
+  },
+  "keywords": [
+    "chemical-management",
+    "sample-management",
+    "eln",
+    "electronic-lab-notebook"
+  ],
+  "author": "NIHS",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
