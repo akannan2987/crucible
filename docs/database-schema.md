@@ -124,6 +124,11 @@ The database contains four main collections:
 
 ## Collections
 
+> ℹ️ The field-by-field record shapes documented in this section apply to
+> **both** storage engines: the Python backend stores each record verbatim in
+> its table's `doc` JSON column, so a "chemical" has exactly the same fields
+> in SQLite as it had in LowDB.
+
 ### 1. Chemicals Collection
 
 Stores chemical compound information.

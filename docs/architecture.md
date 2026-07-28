@@ -1,13 +1,15 @@
 # System Architecture - Crucible: Pandora Toolbox Enhancement (v2.0)
 
-Technical architecture and design documentation for the Chemical and Sample Management System.
+Technical architecture and design documentation for the Chemical and Sample
+Management System. This document describes the **current architecture: a
+Python/FastAPI backend with a React frontend**. The retired-in-progress
+Node.js stack is summarised briefly in [Legacy Node.js Stack](#legacy-nodejs-stack).
 
 ---
 
 ## Table of Contents
 
 - [Overview](#overview)
-- [Python Backend (v2.0 Migration)](#python-backend-v20-migration)
 - [System Architecture](#system-architecture)
 - [Technology Stack](#technology-stack)
 - [Application Layers](#application-layers)
@@ -16,115 +18,38 @@ Technical architecture and design documentation for the Chemical and Sample Mana
 - [API Architecture](#api-architecture)
 - [Database Design](#database-design)
 - [Deployment Architecture](#deployment-architecture)
+- [Performance Considerations](#performance-considerations)
+- [Security Architecture](#security-architecture)
+- [Monitoring & Observability](#monitoring--observability)
+- [Extension Points](#extension-points)
+- [Design Patterns Used](#design-patterns-used)
+- [SDF Handling (RDKit)](#sdf-handling-rdkit)
+- [Testing](#testing)
+- [Legacy Node.js Stack](#legacy-nodejs-stack)
+- [Interactive Architecture Page](#interactive-architecture-page)
 
 ---
 
 ## Overview
 
-Crucible: Pandora Toolbox Enhancement (v2.0) is a full-stack web application built with modern JavaScript technologies, designed for managing chemical compounds, samples, and associated research data.
+Crucible: Pandora Toolbox Enhancement (v2.0) is a full-stack web application
+for managing chemical compounds, samples, and associated research data. The
+backend is written in **Python (FastAPI)**; the frontend is a **React** single
+page application served by the same process.
 
 ### Key Characteristics
 
 - **Architecture Style**: Monolithic with clear separation of concerns
-- **Communication**: RESTful API
-- **Data Storage**: JSON-based file storage (LowDB) → **SQLite via SQLAlchemy** in the Python backend
-- **Deployment**: Containerized application (Podman/Docker)
+- **Communication**: RESTful API (contract in [API.md](../API.md))
+- **Data Storage**: SQLite via SQLAlchemy 2 (`data/crucible.db`); PostgreSQL-ready
+- **Chemistry**: RDKit for SDF/structure handling
+- **Deployment**: One container (`crucible-py`), runs under podman or docker
 - **Scalability**: Vertical scaling (horizontal planned for future)
 
-> ⚠️ **Migration status:** the Node/Express backend documented in the sections
-> below is being replaced by a **Python/FastAPI backend** (`backend/`) with an
-> identical API contract (strangler-fig migration). The React client, the API
-> contract (API.md) and all diagrams of the *frontend* remain accurate for both.
-> The next section documents the Python backend; the Express sections are kept
-> until the legacy stack is retired. Deployment runbooks and the cutover plan
-> live in [MIGRATION.md](../MIGRATION.md).
-
----
-
-## Python Backend (v2.0 Migration)
-
-**Location**: `backend/` · **Runs as**: `crucible-py` container, port 49160 (managed by `container-py.sh`)
-
-### High-Level Architecture (Python stack)
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│                       Client Browser                          │
-│         React SPA (client/dist — unchanged, same /api calls)  │
-└───────────────────────────┬──────────────────────────────────┘
-                            ↕ REST /api/* + static files
-┌───────────────────────────┴──────────────────────────────────┐
-│              FastAPI application (backend/app/)               │
-│                                                               │
-│  main.py        app factory · CORS · static/SPA serving ·     │
-│                 /architecture · {"error": ...} error shape    │
-│  routers/       chemicals · samples · screening ·             │
-│                 toxicology · stats   (1 file per Express      │
-│                 route file, endpoint-for-endpoint)            │
-│  schemas.py     Pydantic v2 request models (lenient — no 422s │
-│                 that Express would not have produced)         │
-│  compat.py      JS-semantics helpers: || defaulting,          │
-│                 parseInt, toFixed(1), toISOString format      │
-│  utils/         sdf.py (RDKit structure analysis) ·           │
-│                 samples_excel.py (SLIMS 3-row header) ·       │
-│                 excel.py (xlsx/csv → formatted strings)       │
-│  store.py       lowdb-like verbs (all_docs/find/insert/…)     │
-│  models.py      SQLAlchemy 2 ORM — hybrid document pattern    │
-│  database.py    engine from DATABASE_URL · per-request        │
-│                 Session via FastAPI dependency injection      │
-└───────────────────────────┬──────────────────────────────────┘
-                            ↕ SQLAlchemy
-┌───────────────────────────┴──────────────────────────────────┐
-│  SQLite  data/crucible.db          (PostgreSQL-ready:         │
-│  tables: chemicals · samples ·      switching is a            │
-│  screening · toxicology             DATABASE_URL change)      │
-│                                                               │
-│  data/pandora.json  ──migrate_from_lowdb.py──►  (one-shot,   │
-│  (legacy lowdb file)                             idempotent)  │
-└──────────────────────────────────────────────────────────────┘
-```
-
-### Technology Stack (Python backend)
-
-| Technology | Purpose | Where |
-|------------|---------|-------|
-| **Python 3.12** | Runtime (python:3.12-slim image) | `backend/Dockerfile` |
-| **FastAPI** | Web framework, routing, DI, OpenAPI docs at `/docs` | `backend/app/main.py`, `routers/` |
-| **uvicorn** | ASGI server (0.0.0.0:$PORT, default 49160) | `backend/app/main.py` |
-| **SQLAlchemy 2** | ORM / database access | `backend/app/models.py`, `database.py` |
-| **Pydantic v2** | Request models | `backend/app/schemas.py` |
-| **SQLite** | Storage (file: `data/crucible.db`) | `DATABASE_URL` in `config.py` |
-| **RDKit** | SDF/MOL parsing, formula/MW, S-Groups, stereo | `backend/app/utils/sdf.py` |
-| **openpyxl** | Excel reading (SLIMS + generic templates) | `backend/app/utils/excel.py` |
-| **pytest** | 45 contract-parity tests + live dual-backend diff | `backend/tests/` |
-
-### Request Flow (Python stack)
-
-```
-Browser fetch('/api/chemicals?search=x')
-   → uvicorn → FastAPI router  (routers/chemicals.py :: list_chemicals)
-   → Depends(get_db) opens a SQLAlchemy Session          (database.py)
-   → store.all_docs(db, Chemical) reads record documents (store.py)
-   → filtering/sorting/pagination in Python — identical
-     semantics to the Express implementation             (compat.py)
-   → dict returned → FastAPI serialises JSON → browser
-```
-
-### Key design decisions
-
-1. **Identical contract, quirks included** — same paths, status codes,
-   messages, and JS-isms (`|| null` coercion, `errors` key omitted when
-   empty, `percentage` as a string). Enforced by `backend/tests/`.
-2. **Hybrid document storage** — lowdb records are schemaless, so each table
-   stores the full record in a `doc` JSON column plus indexed columns
-   (`id`, business key, `created_at`, insertion-order `seq`). See
-   [database-schema.md](database-schema.md) for the SQL schema.
-3. **SDF via RDKit** — records are split textually (original `mol_block` and
-   all `> <FIELD>` items preserved verbatim); RDKit supplies the structural
-   intelligence (formula/MW from explicit atoms, polymer S-Groups, charges,
-   radicals, stereo, mixtures).
-4. **Same serving model as Express** — one process serves `/api/*`, the
-   built React client, `/architecture`, and the SPA fallback.
+> The backend was migrated from Node.js/Express using a **strangler-fig**
+> approach: the FastAPI implementation reproduces the Express API contract
+> exactly (verified by parity tests), so the React client did not change.
+> Runbooks and the cutover plan live in [MIGRATION.md](../MIGRATION.md).
 
 ---
 
@@ -133,39 +58,42 @@ Browser fetch('/api/chemicals?search=x')
 ### High-Level Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Client Browser                        │
-│  ┌───────────────────────────────────────────────────┐  │
-│  │         React Application (SPA)                    │  │
-│  │  ┌─────────┐  ┌──────────┐  ┌────────────────┐   │  │
-│  │  │Dashboard│  │Chemicals │  │Samples/Screen  │   │  │
-│  │  │  Page   │  │  Manager │  │Toxicology      │   │  │
-│  │  └─────────┘  └──────────┘  └────────────────┘   │  │
-│  │              Vite Dev Server / Static Build        │  │
-│  └───────────────────────────────────────────────────┘  │
-│                         ↕ HTTPS/REST API                 │
-│  ┌───────────────────────────────────────────────────┐  │
-│  │            Express.js Backend                      │  │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────────┐    │  │
-│  │  │ API      │  │ Business │  │  File Upload │    │  │
-│  │  │ Routes   │  │ Logic    │  │  Handler     │    │  │
-│  │  └──────────┘  └──────────┘  └──────────────┘    │  │
-│  │                    LowDB Data Layer                │  │
-│  └───────────────────────────────────────────────────┘  │
-│                         ↕                                │
-│  ┌───────────────────────────────────────────────────┐  │
-│  │         JSON Database (pandora.json)              │  │
-│  │  { chemicals: [], samples: [],                    │  │
-│  │    screening: [], toxicology: [] }                │  │
-│  └───────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                       Client Browser                          │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │              React Application (SPA)                    │  │
+│  │  ┌─────────┐  ┌──────────┐  ┌────────────────────┐    │  │
+│  │  │Dashboard│  │Chemicals │  │Samples / Screening  │    │  │
+│  │  │  Page   │  │ Manager  │  │Toxicology           │    │  │
+│  │  └─────────┘  └──────────┘  └────────────────────┘    │  │
+│  │            Vite Dev Server / Static Build               │  │
+│  └────────────────────────────────────────────────────────┘  │
+│                     ↕ REST /api/* + static files              │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │        FastAPI Backend (backend/app/, uvicorn)          │  │
+│  │  ┌──────────┐  ┌───────────────┐  ┌───────────────┐   │  │
+│  │  │ Routers  │  │ Upload parsers │  │ Static + SPA  │   │  │
+│  │  │ /api/*   │  │ openpyxl·RDKit │  │ serving       │   │  │
+│  │  └────┬─────┘  └───────────────┘  └───────────────┘   │  │
+│  │       │   SQLAlchemy 2 ORM (store.py · models.py)      │  │
+│  └───────┼────────────────────────────────────────────────┘  │
+│          ↕                                                    │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │            SQLite Database (data/crucible.db)           │  │
+│  │  tables: chemicals · samples · screening · toxicology   │  │
+│  │  (each row: indexed columns + full record as JSON doc)  │  │
+│  └────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────┘
+
+   data/pandora.json (legacy lowdb file) ──one-shot──►  crucible.db
+                     backend/scripts/migrate_from_lowdb.py (idempotent)
 ```
 
 ---
 
 ## Technology Stack
 
-### Frontend
+### Frontend (unchanged by the migration)
 
 | Technology | Version | Purpose |
 |------------|---------|---------|
@@ -177,23 +105,27 @@ Browser fetch('/api/chemicals?search=x')
 | **React Hot Toast** | 2.4.1 | Toast notifications |
 | **Heroicons** | 2.1.1 | Icon library |
 
-### Backend
+### Backend (Python)
 
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| **Node.js** | 18+ | Runtime environment |
-| **Express** | 4.18.2 | Web framework |
-| **LowDB** | 1.0.0 | JSON database |
-| **Multer** | 1.4.5 | File upload middleware |
-| **XLSX** | 0.18.5 | Excel file processing |
-| **UUID** | 9.0.0 | Unique ID generation |
-| **CORS** | 2.8.5 | Cross-origin support |
+| Technology | Purpose | Where to see it |
+|------------|---------|-----------------|
+| **Python 3.12** | Runtime (python:3.12-slim image) | `backend/Dockerfile` |
+| **FastAPI** | Web framework: routing, dependency injection, OpenAPI docs at `/docs` | `backend/app/main.py`, `backend/app/routers/` |
+| **uvicorn** | ASGI server, binds `0.0.0.0:$PORT` (default 49160) | `backend/app/main.py` |
+| **SQLAlchemy 2** | ORM / database access | `backend/app/models.py`, `backend/app/database.py` |
+| **Pydantic v2** | Request models (deliberately lenient — see schemas.py docstring) | `backend/app/schemas.py` |
+| **SQLite** | Storage; PostgreSQL later = `DATABASE_URL` change | `backend/app/config.py` |
+| **RDKit** | SDF/MOL parsing, structural intelligence | `backend/app/utils/sdf.py` |
+| **openpyxl** | Excel reading (SLIMS + chemical templates) | `backend/app/utils/excel.py`, `samples_excel.py` |
+| **pytest** | Parity tests + optional live dual-backend diff | `backend/tests/` |
 
-### Development Tools
+### Ops
 
-- **Nodemon**: Auto-restart server on changes
-- **Concurrently**: Run multiple npm scripts
-- **Podman/Docker**: Containerization
+- **`container-py.sh`**: build/start/stop/logs/status/migrate — auto-detects
+  podman or docker (`CONTAINER_RUNTIME` override), checks the podman VM on macOS
+- **`backend/Dockerfile`**: multi-stage — Node stage builds the React client,
+  final python:3.12-slim image contains no Node
+- **`monitor.sh`**: cron health check (`CONTAINER_NAME=crucible-py`)
 
 ---
 
@@ -203,82 +135,56 @@ Browser fetch('/api/chemicals?search=x')
 
 **Location**: `client/src/`
 
-**Responsibilities:**
-- User interface rendering
-- User input handling
-- State management
-- API communication
-- Client-side routing
+Unchanged by the migration: React pages, components, and the API service
+(`client/src/services/api.js`) which calls relative `/api/...` URLs — which is
+why the backend could be swapped without touching the client.
 
-**Key Components:**
+### 2. API Layer (Routers)
+
+**Location**: `backend/app/routers/`
+
+**Responsibilities:** request handling, response formatting, error handling —
+one router file per resource, mirroring the legacy Express route files 1:1:
+
 ```
-client/src/
-├── pages/              # Route-level components
-│   ├── Dashboard.jsx
-│   ├── ChemicalsView.jsx
-│   ├── ChemicalsUpload.jsx
-│   └── ...
-├── services/           # API client
-│   └── api.js
-├── App.jsx            # Root component & routing
-└── main.jsx           # Application entry point
-```
-
-### 2. API Layer (Server)
-
-**Location**: `server/src/routes/`
-
-**Responsibilities:**
-- Request validation
-- Response formatting
-- Route handling
-- Error handling
-
-**Routes:**
-```
-server/src/routes/
-├── chemicals.js       # Chemical CRUD & uploads
-├── samples.js         # Sample management
-├── screening.js       # Screening data
-├── toxicology.js      # Toxicology data
-└── stats.js          # Dashboard statistics
+backend/app/routers/
+├── chemicals.py       # Chemical CRUD & uploads (Excel/CSV/SDF)
+├── samples.py         # Sample management + SLIMS upload + chemical linking
+├── screening.py       # Screening data
+├── toxicology.py      # Toxicology data
+└── stats.py           # Dashboard statistics
 ```
 
 ### 3. Business Logic Layer
 
-**Location**: Integrated in route handlers
+**Location**: route handlers + `backend/app/utils/`
 
-**Responsibilities:**
-- Data validation
-- Business rules enforcement
-- File processing (Excel, SDF)
-- Bulk operations
+**Responsibilities:** validation (duplicate IDs, required references), file
+processing (`excel.py`, `samples_excel.py`, `sdf.py`), bulk operations, and
+the JS-compatibility helpers (`compat.py`) that keep response semantics
+identical to the legacy API (`||` defaulting, `toFixed(1)` strings,
+`toISOString` timestamps).
 
 ### 4. Data Access Layer
 
-**Location**: `server/src/database.js`
+**Location**: `backend/app/store.py`, `models.py`, `database.py`
 
-**Responsibilities:**
-- Database initialization
-- CRUD operations
-- Data persistence
+**Responsibilities:** engine/session management (per-request session via the
+`get_db` dependency), lowdb-like verbs (`all_docs`, `find_row`, `insert_doc`,
+`replace_doc`), and keeping the indexed columns in sync with the JSON `doc`.
 
-**Database Structure:**
-```javascript
-{
-  chemicals: [
-    { id, chemical_id, name, cas_number, ... }
-  ],
-  samples: [
-    { id, sample_id, identification, chemical_ids, ... }
-  ],
-  screening: [
-    { id, chemical_id, assay_name, result, ... }
-  ],
-  toxicology: [
-    { id, chemical_id, study_type, ld50, ... }
-  ]
-}
+**Database structure** (hybrid document pattern — details in
+[database-schema.md](database-schema.md)):
+
+```sql
+-- same shape for samples / screening / toxicology
+CREATE TABLE chemicals (
+    id          VARCHAR(64)  PRIMARY KEY,  -- UUID
+    chemical_id VARCHAR(255) UNIQUE,       -- business key
+    created_at  VARCHAR(40),               -- ISO string (sorting)
+    seq         INTEGER,                   -- insertion order
+    doc         JSON NOT NULL              -- the full record, verbatim
+);
 ```
 
 ---
@@ -290,11 +196,11 @@ server/src/routes/
 ```
 User Action → React Component → API Service (Axios)
     ↓
-Express Route Handler → Database Query (LowDB)
+FastAPI Router → get_db Session → store.all_docs() (SQLAlchemy → SQLite)
     ↓
-JSON Response ← Format Data ← Read from File
+Filter / sort / paginate in Python (identical semantics to legacy API)
     ↓
-Update Component State → Re-render UI
+JSON Response → Update Component State → Re-render UI
 ```
 
 ### Write Operation (POST/PUT)
@@ -302,9 +208,9 @@ Update Component State → Re-render UI
 ```
 User Input → Form Validation → API Service
     ↓
-Express Route Handler → Validate Data
+FastAPI Router → Pydantic model parse → business checks (duplicates, refs)
     ↓
-Write to Database (LowDB) → Persist to File
+store.insert_doc / replace_doc → SQLAlchemy commit → crucible.db
     ↓
 Success Response → Update UI → Show Toast
 ```
@@ -312,20 +218,20 @@ Success Response → Update UI → Show Toast
 ### File Upload Flow
 
 ```
-User Selects File → FormData Creation → Multer Middleware
+User Selects File → FormData → FastAPI UploadFile (multipart)
     ↓
-Parse File (XLSX Library) → Validate Rows
+Excel: openpyxl (or CSV parser)   |   SDF: text record split + RDKit analysis
     ↓
-Batch Insert/Update → Database Write
+Row/record mapping (same field-alias tables as the legacy parsers)
     ↓
-Return Results (inserted, updated, errors) → Display Summary
+Batch insert/update → Return {inserted, updated, errors} → Display Summary
 ```
 
 ---
 
 ## Component Architecture
 
-### Frontend Component Hierarchy
+### Frontend Component Hierarchy (unchanged)
 
 ```
 App
@@ -352,16 +258,28 @@ App
 └── Similar structure for Samples, Screening, Toxicology
 ```
 
-### Component Communication
+### Backend Module Map
 
-1. **Props**: Parent → Child data flow
-2. **Callbacks**: Child → Parent events
-3. **State**: Local component state (useState)
-4. **API**: Global data fetching (axios)
+```
+backend/app/
+├── main.py         # app factory: CORS, routers, /architecture, static + SPA,
+│                   #   error handlers producing {"error": "..."} shapes
+├── config.py       # env-var configuration (PORT, DATABASE_URL, paths)
+├── compat.py       # JS-semantics helpers (parity with the legacy API)
+├── database.py     # engine, SessionLocal, get_db dependency
+├── models.py       # SQLAlchemy models (hybrid document pattern)
+├── schemas.py      # Pydantic request models
+├── store.py        # data-access verbs
+├── routers/        # one file per resource
+└── utils/          # sdf.py (RDKit) · samples_excel.py (SLIMS) · excel.py
+```
 
 ---
 
 ## API Architecture
+
+The REST contract is unchanged from v1 — see [API.md](../API.md) for the full
+reference. FastAPI additionally serves interactive OpenAPI docs at `/docs`.
 
 ### RESTful Design
 
@@ -370,6 +288,7 @@ App
 | `/chemicals` | List all | Create one | - | - |
 | `/chemicals/:id` | Get one | - | Update | Delete |
 | `/chemicals/upload/excel` | - | Bulk upload | - | - |
+| `/chemicals/upload/sdf` | - | Bulk upload | - | - |
 | `/chemicals/bulk/delete` | - | Bulk delete | - | - |
 | `/chemicals/bulk/update` | - | Bulk update | - | - |
 
@@ -397,78 +316,109 @@ axios.get('/api/chemicals', {
 
 ### Error Handling
 
-```javascript
-try {
-  // Business logic
-  res.json({ data: result });
-} catch (error) {
-  res.status(500).json({ error: error.message });
-}
+Errors are returned as `{"error": "message"}` with the same status codes the
+legacy API used. Implemented once, centrally, in `backend/app/main.py`:
+
+```python
+@application.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request, exc):
+    return JSONResponse(status_code=exc.status_code, content={"error": str(exc.detail)})
 ```
 
 ---
 
 ## Database Design
 
-### LowDB Implementation
+### SQLite + SQLAlchemy (hybrid document pattern)
 
-**File**: `server/data/pandora.json`
+**File**: `data/crucible.db` (bind-mounted volume in containers)
 
-**Advantages:**
-- Simple setup, no external database
-- Easy to backup (single JSON file)
-- Good for up to 15K chemicals
-- Human-readable
+Legacy lowdb records are schemaless — different creation paths (manual POST,
+Excel upload, SDF upload) produce different key sets, and PUT merges arbitrary
+keys. A fully normalised schema would have changed API response shapes, so
+each table stores:
 
-**Limitations:**
-- Not suitable for concurrent writes
-- Limited query capabilities
-- Memory-based (loads entire file)
-- No transactions
+- the **complete record verbatim** in a `doc` JSON column (what responses serialise), and
+- **derived, indexed columns** (`id`, business key, `created_at`, `seq`) for lookups and ordering.
 
-### Future Migration Path
+**Advantages:** API responses byte-identical to the lowdb era · real
+transactions · single-file backup · works unchanged on PostgreSQL (JSONB).
 
-For larger scale:
-- **SQLite**: Better performance, transactions
-- **PostgreSQL**: Full relational database
-- **MongoDB**: Document-based, flexible schema
+**Trade-off:** cross-record queries filter in Python (fine at the 15K-record
+scale); promoting hot fields to real columns is an incremental follow-up.
+
+### Migration from lowdb
+
+`backend/scripts/migrate_from_lowdb.py` — one-shot, **idempotent** upsert from
+`data/pandora.json`, keyed on each collection's business key; prints a
+per-collection count summary. Safe to re-run at any time.
+
+### PostgreSQL upgrade path
+
+`DATABASE_URL=postgresql+psycopg://user:pass@host/crucible` (+ add
+`psycopg[binary]` to requirements), run the migration once against the new
+URL. Recommended at the same time: introduce Alembic for schema versioning.
 
 ---
 
 ## Deployment Architecture
 
-### Container Structure
+### Container Structure (`backend/Dockerfile`, multi-stage)
 
 ```dockerfile
-FROM node:18-alpine
-    ↓
-Copy application files
-    ↓
-Install backend dependencies
-    ↓
-Build frontend (React → static files)
-    ↓
-Serve both from Express
-    ↓
-Expose port 49160
+Stage 1: docker.io/library/node:18-alpine
+    → npm install + vite build  (client/dist)
+
+Stage 2: docker.io/library/python:3.12-slim
+    → pip install -r backend/requirements.txt   (RDKit et al. as wheels)
+    → copy backend/app, backend/scripts, docs, client/dist
+    → HEALTHCHECK: GET http://127.0.0.1:$PORT/api/stats
+    → CMD python -m app.main   (uvicorn on 0.0.0.0:$PORT, default 49160)
 ```
 
-### Container Layers
-
-1. **Base Layer**: Node.js 18 Alpine (with OpenSSL)
-2. **Dependencies Layer**: npm packages
-3. **Application Layer**: Source code
-4. **Build Layer**: Compiled frontend
-5. **Runtime Layer**: Express HTTPS server
+The final image contains **no Node.js** — Node exists only in the build stage.
 
 ### Volume Mounts
 
-- **Data Volume**: `/app/server/data` → `./data/`
-  - Persists database across container restarts
-  - Can be backed up separately
-- **Certs Volume**: `/app/certs` → `./certs/` (read-only)
-  - SSL certificate, private key, CA certificate
-  - Mounted read-only for security
+- **Data volume**: `./data/` → `/app/data` (`:Z` for SELinux)
+  - `crucible.db` (live database) and `pandora.json` (migration source / rollback snapshot)
+  - persists across container rebuilds; backup = copy the directory
+
+### Runtime management
+
+`./container-py.sh {build|start|stop|restart|rebuild|migrate|logs|status|shell|clean}`
+— identical behaviour under podman and docker; publishes the port on
+`0.0.0.0` (Linux) or `127.0.0.1` (macOS, where Apple's `remoted` daemon
+conflicts with wildcard binds of 49160). See [MIGRATION.md](../MIGRATION.md)
+for the macOS/RHEL8 runbooks and systemd auto-start.
+
+### Deployment Diagram
+
+```
+┌──────────────────────────────────────────┐
+│         User's Browser                    │
+│  http://<host>:49160                      │
+└────────────────┬─────────────────────────┘
+                 │ Port 49160
+┌────────────────▼─────────────────────────┐
+│   Container: crucible-py (podman/docker)  │
+│  ┌────────────────────────────────────┐  │
+│  │   uvicorn + FastAPI (Python 3.12)  │  │
+│  │   Serves: React App + /api + /docs │  │
+│  │   HEALTHCHECK → /api/stats         │  │
+│  └────────────┬───────────────────────┘  │
+│               │ SQLAlchemy                │
+│  ┌────────────▼───────────────────────┐  │
+│  │   Data Volume  /app/data           │  │
+│  │   crucible.db · pandora.json       │  │
+│  └────────────────────────────────────┘  │
+└──────────────────────────────────────────┘
+         ↑
+┌────────┴─────────────────────────────────┐
+│  Health Monitor (cron every 5 min)        │
+│  CONTAINER_NAME=crucible-py ./monitor.sh  │
+└──────────────────────────────────────────┘
+```
 
 ---
 
@@ -482,23 +432,17 @@ Expose port 49160
 
 ### Backend Optimization
 
-- **Pagination**: Limit data transfer
-- **Indexing**: In-memory arrays (LowDB)
-- **File Uploads**: Stream processing
+- **Pagination**: limits data transfer on all list endpoints
+- **Indexes**: business keys and `created_at`/`seq` columns are indexed
+- **Transactions**: SQLAlchemy commits are atomic (an improvement over the
+  lowdb whole-file rewrite)
 
 ### Scalability Limits
 
-Current architecture supports:
-- ✅ 15,000 chemicals
-- ✅ 1,000 samples
-- ✅ Unlimited screening/toxicology records
-- ✅ 10-50 concurrent users
-
-For higher scale, consider:
-- Load balancer
-- Database migration
-- Caching layer (Redis)
-- CDN for static assets
+Current architecture comfortably supports the reference scale (15,000
+chemicals / 1,000 samples, 10–50 concurrent users). For higher scale:
+PostgreSQL via `DATABASE_URL`, column promotion + SQL-side filtering,
+uvicorn `--workers N`, and a caching layer if ever needed.
 
 ---
 
@@ -506,149 +450,85 @@ For higher scale, consider:
 
 ### Current Implementation
 
-- **HTTPS/TLS**: All production traffic encrypted with official Nestlé SSL certificates
-- **Certificate Management**: Certificates excluded from git, verified on deployment via MD5 hash matching
-- **CORS**: Configured for specific origins
-- **Input Validation**: Server-side validation
-- **File Upload Limits**: 100MB max
-- **Error Handling**: No sensitive data in errors
-- **Git Safety**: `.gitignore` protects certs/, data/, *.key, *.crt, *.pem, .env
-- **File Permissions**: Private key restricted to `chmod 600`
-
-### SSL Certificate Details
-
-| File | Source | Purpose |
-|------|--------|--------|
-| `certs/server.crt` | `nr-ubp-dev-02.nihs.ch.nestle.com.cer` | Server certificate |
-| `certs/server.key` | `nr-ubp-dev-02.nihs.ch.nestle.com.key` | Private key |
-| `certs/ca.crt` | `Nestle_Root_CA.cer` | CA root certificate |
+- **CORS**: open (same as the legacy API) — acceptable on the internal network,
+  revisit with SSO
+- **Input Validation**: server-side checks (duplicate IDs, required references);
+  Pydantic models kept lenient on purpose to preserve the API contract
+- **Error Handling**: no stack traces or sensitive data in error responses
+- **Git Safety**: `.gitignore` protects `certs/`, `*.db`, keys, envs
+- **Transport**: HTTP inside the network (matching current production).
+  TLS for the Python stack is an **open item** — terminate at a reverse proxy
+  or use uvicorn `--ssl-certfile/--ssl-keyfile` (the legacy stack's in-process
+  TLS with Nestlé certificates is documented in DEPLOYMENT.md)
 
 ### Future Enhancements
 
 - [ ] Authentication (SSO)
-- [ ] Authorization (Role-based access)
+- [ ] Authorization (role-based access)
+- [ ] TLS termination for the Python stack
 - [ ] Rate limiting
 - [ ] Audit logging
-- [ ] Certificate expiry monitoring
 
 ---
 
 ## Monitoring & Observability
 
-### Current Capabilities
-
-- **HTTPS Health Monitoring**: `monitor.sh` checks `https://localhost:49160/api/stats` every 5 minutes via cron
-- **Auto-Restart**: Container automatically restarted if health check fails
-- **Monitor Logs**: All activity logged to `/tmp/pandora-monitor.log`
-- **Server Keepalive**: 65s keepAliveTimeout, 66s headersTimeout, 120s requestTimeout
-- **Crash Recovery**: Global handlers for `uncaughtException` and `unhandledRejection`
-- **Memory Monitoring**: Automatic memory usage logging every 5 minutes (RSS, heap used/total)
-- **Container HEALTHCHECK**: Built-in Docker/Podman health check every 30 seconds
-- **Dashboard**: Real-time statistics with 5s auto-refresh
-
-### Planned Enhancements
-
-- [ ] Application metrics (Prometheus)
-- [ ] Performance monitoring
-- [ ] Error tracking (Sentry)
-- [ ] Usage analytics
-- [ ] Certificate expiry alerts
+- **Container HEALTHCHECK**: every 30 s against `/api/stats` (`127.0.0.1` on
+  purpose — in-container `localhost` resolves to `::1` while the server binds
+  IPv4)
+- **Health monitor**: `CONTAINER_NAME=crucible-py ./monitor.sh` via cron —
+  curls `/api/stats`, restarts the container on failure
+- **Status command**: `./container-py.sh status` — container state + live API check
+- **Dashboard**: real-time statistics with 5 s auto-refresh
+- **Planned**: metrics (Prometheus), error tracking, certificate expiry alerts
 
 ---
 
 ## Extension Points
 
-The architecture allows easy extension:
-
-1. **New Data Module**: Add route + frontend page
-2. **New File Format**: Add parser in upload handler
-3. **New API Endpoint**: Add route handler
-4. **New UI Component**: Add to components/
+1. **New data module**: add a router file + SQLAlchemy model + frontend page
+2. **New file format**: add a parser in `backend/app/utils/` and wire it to an
+   upload route
+3. **New API endpoint**: add a route function to the relevant router
+4. **New UI component**: add to `client/src/components/`
 
 ---
 
 ## Design Patterns Used
 
-- **MVC**: Model (LowDB), View (React), Controller (Express routes)
-- **Repository**: Database abstraction layer
-- **Factory**: Component composition
-- **Observer**: React state updates
-- **Singleton**: Database instance
+- **Strangler fig**: new backend grown alongside the old one behind the same contract
+- **Hybrid document storage**: verbatim `doc` JSON + derived indexed columns
+- **Repository**: `store.py` isolates data access from route logic
+- **Dependency injection**: FastAPI `Depends(get_db)` for per-request sessions
+- **Adapter/compat layer**: `compat.py` reproduces JS semantics in Python
 
 ---
 
-## Diagrams
+## SDF Handling (RDKit)
 
-### Deployment Diagram
+**Module:** `backend/app/utils/sdf.py` · used by `POST /api/chemicals/upload/sdf`
 
-```
-┌──────────────────────────────────────────┐
-│         User's Browser                    │
-│  https://nr-ubp-dev-02:49160  🔒          │
-└────────────────┬─────────────────────────┘
-                 │ HTTPS/TLS (Port 49160)
-┌────────────────▼─────────────────────────┐
-│      Podman Container                     │
-│  ┌────────────────────────────────────┐  │
-│  │   Node.js HTTPS Server             │  │
-│  │   Port 49160 (TLS)                  │  │
-│  │   SSL Certs: /app/certs/           │  │
-│  │   Serves: React App + API          │  │
-│  └────────────┬───────────────────────┘  │
-│               │                           │
-│  ┌────────────▼───────────────────────┐  │
-│  │   Data Volume                      │  │
-│  │   /app/server/data/pandora.json    │  │
-│  └────────────────────────────────────┘  │
-│                                           │
-│  ┌────────────────────────────────────┐  │
-│  │   Certs Volume (read-only)         │  │
-│  │   /app/certs/ → server.crt,        │  │
-│  │   server.key, ca.crt               │  │
-│  └────────────────────────────────────┘  │
-└──────────────────────────────────────────┘
-         ↑
-┌────────┴─────────────────────────────────┐
-│   Health Monitor (cron every 5 min)       │
-│   monitor.sh → curl HTTPS API → restart   │
-│   Logs: /tmp/pandora-monitor.log          │
-└──────────────────────────────────────────┘
-```
+Hybrid design: each SDF record's **text is preserved verbatim** (original MOL
+block and every `> <FIELD_NAME>` data item — nothing is ever dropped), while
+**RDKit** provides the structural intelligence: formula and molecular weight
+(computed from explicit atoms, matching the legacy behaviour), S-Groups
+(`SRU`/`MUL`/`COP` → polymer detection with labels), formal charges, radicals,
+stereo flags, and mixture detection. Handles V2000 and V3000 (including
+continuation lines) via RDKit's molblock parser with `sanitize=False` for
+maximum tolerance of polymers and exotic valences.
 
----
-
-## SDF Parser (`server/src/utils/sdfParser.js`)
-
-The SDF (Structure Data File) parser handles V2000 and V3000 molfile formats embedded in SDF containers. It is used when users upload `.sdf` files via `POST /api/chemicals/upload/sdf`.
-
-The parser is **EPA DSSTox / Nestlé regulatory database compatible** — validated against a 77-record fixture covering polymers, salts, mixtures, charged atoms, and stereo descriptors. See [`server/tests/sdfParser.test.js`](../server/tests/sdfParser.test.js) (24 unit tests, all passing).
-
-### What it extracts
-
-| Output Field | Source |
-|-------------|--------|
-| `name` | Header line 1 of each MOL record |
-| `version` | Auto-detected `V2000` or `V3000` (falls back to scanning body for `M  V30` markers) |
-| `molecularFormula` | Computed from atom block (Hill order) |
-| `molecularWeight` | Computed from atom block using IUPAC 2021 atomic masses |
-| `atoms` | Array of parsed atom objects (`x`, `y`, `z`, `symbol`, `charge`, `cfg`, `radical`) |
-| `bonds` | Array of parsed bond objects (`atom1`, `atom2`, `type`, `stereo`) |
-| `sGroups` | V3000 S-Group records (`SRU`, `MUL`, `COP`, `MIX`, `SUP`) with `type`, `label`, `connect`, `atomIndices` |
-| `collections` | V3000 stereo collections (`STEABS`, `STEREL`, `STERAC`) |
-| `properties` | Key→value pairs from every `> <FIELD_NAME>` data item (catch-all — nothing is lost) |
-| `warnings` | Non-fatal parse warnings (counts mismatch, missing M  END, continuation issues) |
+The extraction contract is unchanged from v1 (the field-alias tables were
+ported verbatim and are enforced by parity tests):
 
 ### Tier 1 — Explicit named identifiers
 
-`mapMoleculeToChemical()` promotes the most commonly queried fields to top-level keys:
-
-| Pandora Field | SDF Source (case-insensitive, multiple aliases) | Fallback |
+| Crucible Field | SDF Source (case-insensitive, multiple aliases) | Fallback |
 |--------------|-----------------------------------------------|----------|
-| `chemical_id` | `chemical_id`, `compound_id`, `dtxsid`, `pubchem_compound_cid`, `registry_number`, … | Auto UUID |
-| `name` | `compound_name`, `chemical_name`, `preferred_name`, `iupac_name`, `trade_name`, … | `mol.name` → `'Unknown'` |
+| `chemical_id` | `chemical_id`, `compound_id`, `dtxsid`, `pubchem_compound_cid`, `registry_number`, … | Auto-generated |
+| `name` | `compound_name`, `chemical_name`, `preferred_name`, `iupac_name`, `trade_name`, … | MOL header → `'Unknown'` |
 | `cas_number` | `cas_number`, `cas`, `casrn`, `cas registry number`, … | `null` |
-| `molecular_formula` | `molecular_formula`, `mol_formula`, `formula`, … | Computed from atoms |
-| `molecular_weight` | `molecular_weight`, `mw`, `exact_mass`, `monoisotopic_mass`, … | Computed from atoms |
+| `molecular_formula` | `molecular_formula`, `mol_formula`, `formula`, … | Computed (RDKit atoms, Hill order) |
+| `molecular_weight` | `molecular_weight`, `mw`, `exact_mass`, `monoisotopic_mass`, … | Computed (RDKit atomic weights) |
 | `smiles` | `smiles`, `canonical_smiles`, `isomeric_smiles`, `openeye_iso_smiles`, … | `null` |
 | `inchi` / `inchi_key` | `inchi`, `standard_inchi`, `inchikey`, `inchi_key`, `standard_inchikey`, … | `null` |
 | `dtxsid` | `dtxsid`, `dtx_id`, `dtxid` | `null` |
@@ -662,74 +542,95 @@ The parser is **EPA DSSTox / Nestlé regulatory database compatible** — valida
 
 ### Tier 2 — Regulatory metadata (catch-all)
 
-**Every** `> <FIELD_NAME>` block in the SDF — including the 40+ EPA/Nestlé regulatory fields — is preserved verbatim in the `metadata` object on the chemical record. Examples from real uploads:
+**Every** `> <FIELD_NAME>` block — including the 40+ EPA/Nestlé regulatory
+fields — is preserved verbatim in the `metadata` object. Examples from real
+uploads:
 
 - `Present in PLASTIC`, `Present in COATING`, `Present in INK`, `Present in RUBBER`, `Present in ADHESIVE`, `Present as NIAS`
-- `Role / Usage / Source / NIAS`
 - `EU FCM substance code`, `EU PM substance code`, `Listed / Updated in EU plastic regulation`
 - `Restrictions and Specifications (SML in mg/kg)`, `ADI/TDI (mg/kg bw /day)`, `EFSA Opinions`
 - `US FCS code`, `US FCN + TOR codes`, `US 21 CFR REGNum (list of articles)`
 - `Nestle policy (St-80.008 and ink guidance note)`, `Nestle safety-based level SBL (mg/kg food)`
 - `log P(o/w) (25°C)`, `RI from compilation (DB-5)`, `Color Index Code`
 
-No new field appears unexpectedly — the Viewer UI reads these from `metadata.*` without code changes.
-
 ### Tier 3 — Structural intelligence
 
-For every parsed molecule, `mapMoleculeToChemical()` derives a `structural` object:
+Each record gets a derived `structural` object (now computed by RDKit):
 
 | Property | Type | Meaning |
 |----------|------|---------|
-| `isPolymer` | bool | True when one or more `SRU`, `MUL`, `COP`, or `CRO` S-Groups are present |
-| `polymerLabels` | string[] | SRU labels (`n`, `m`, `x`, `y`, ranges like `10-14`) — useful for display |
-| `isMixture` | bool | True when SMILES contains multiple disconnected components (counted via `.` outside `[]`) |
+| `isPolymer` | bool | One or more `SRU`, `MUL`, `COP`, or `CRO` S-Groups present |
+| `polymerLabels` | string[] | SRU labels (`n`, `m`, `x`, ranges like `10-14`) |
+| `isMixture` | bool | SMILES contains multiple disconnected components |
 | `componentCount` | int | Number of disconnected components in SMILES |
-| `hasStereochemistry` | bool | True when any atom has `CFG`, any bond has stereo wedge, or `STEABS/STEREL/STERAC` collection is present |
-| `stereoAtomCount` | int | Count of atoms with stereo configuration |
-| `stereoBondCount` | int | Count of bonds with stereo wedge |
-| `totalCharge` | int | Sum of all atom charges (zero for neutral molecules) |
-| `chargedAtomCount` | int | Number of atoms with non-zero formal charge |
-| `radicalCount` | int | Number of atoms flagged as radicals |
-| `sGroupCount` | int | Total S-Groups parsed |
-| `sGroupTypes` | string[] | Distinct S-Group type codes (e.g., `["SRU"]`, `["SUP", "MUL"]`) |
+| `hasStereochemistry` | bool | Stereo atoms/bonds or enhanced-stereo groups present |
+| `stereoAtomCount` / `stereoBondCount` | int | Stereo centre / wedge counts |
+| `totalCharge` / `chargedAtomCount` | int | Sum and count of formal charges |
+| `radicalCount` | int | Atoms with radical electrons |
+| `sGroupCount` / `sGroupTypes` | int / string[] | S-Group totals and distinct types |
 
-### Validated coverage (against `docs/excel-templates/Upload_Chemicals_SDF.sdf`)
+### Validation
 
-| Metric | Result |
-|--------|--------|
-| Records parsed | 77 / 77 |
-| Atoms parsed | 76 / 77 (1 record legitimately has `COUNTS 0 0 0`) |
-| Unique SDF property keys preserved | 52 / 52 |
-| Polymers detected (SRU) | 34, all with labels extracted |
-| Mixtures detected | 36 (salts, ester mixtures, polymer blends) |
-| Charged atoms detected | 18 records (Na⁺, Al³⁺, carboxylate anions) |
-| Stereo descriptors detected | 6 records |
-| Parse time | ~13 ms for 77 records |
+The extraction contract was established against a 77-record EPA DSSTox /
+Nestlé regulatory fixture (34 polymers, 36 mixtures, 18 charged-atom records,
+6 stereo records). The Python module is covered by the SDF parity tests in
+`backend/tests/test_sdf_upload.py`; the historical JS parser test suite
+(24 tests) continues to pass in the legacy stack until cutover.
 
-### What is *not* extracted (future work)
+### What RDKit unlocks (previously out of scope for the pure-JS parser)
 
-These would require a chemistry library (RDKit / OpenBabel) and are out of scope for a pure-JS parser:
+Aromaticity perception, ring/rotatable-bond counts, H-bond donors/acceptors,
+logP/TPSA, canonical SMILES generation, and structure rendering are now one
+function call away if ever needed — see the RDKit docs.
 
-- Implicit hydrogen counts (so computed MW matches molecular formula exactly)
-- R/S and E/Z descriptors (we detect *presence* of stereo, not the descriptor)
-- Aromaticity perception
-- Ring count, rotatable bond count, H-bond donors/acceptors, logP, TPSA
-- Superatom expansion (V3000 `SUP` S-Group abbreviations like `Et`, `Ph`, `OAc`)
+### Extending the mapping
 
-### Extending the parser
+To promote a new SDF field to a top-level column, add its aliases to the
+`find(...)` calls in `map_molecule_to_chemical()`
+(`backend/app/utils/sdf.py`). Any field not promoted is **already preserved in
+`metadata`** without code changes.
 
-To add new explicit field mappings, edit the `mapMoleculeToChemical()` function in [`server/src/utils/sdfParser.js`](../server/src/utils/sdfParser.js). The `properties` object contains every `> <FIELD_NAME>` key→value pair from the SDF data block, so any new field is **already preserved in `metadata`** without code changes — promotion to top-level is only needed for fields you want to query or filter on directly.
+---
+
+## Testing
+
+- **Python backend**: `cd backend && .venv/bin/pytest` — 45 parity tests
+  asserting the exact legacy contract (status codes, messages, key sets, JS
+  quirks), plus SDF/SLIMS upload coverage and migration idempotency.
+- **Live dual-backend diff** (optional): identical requests fired at both
+  backends and responses compared — see `backend/tests/test_parity_live.py`.
+- **Legacy stack**: `cd server && npm test` — 70 Jest tests (API, SDF parser,
+  SLIMS parser), kept green until cutover.
+
+---
+
+## Legacy Node.js Stack
+
+Kept in-repo until the cutover completes (see [MIGRATION.md](../MIGRATION.md)
+§8–9 for cutover and rollback). Brief summary:
+
+- **Stack**: Node.js 18 + Express 4 · LowDB 1.0 (JSON file `data/pandora.json`) ·
+  Multer + SheetJS for uploads · custom 850-line SDF parser
+  (`server/src/utils/sdfParser.js`)
+- **Location**: `server/` · container `crucible` managed by `container.sh` ·
+  Node Dockerfile at the repo root
+- **TLS**: served HTTPS in-process with Nestlé certificates (`DEPLOYMENT.md`)
+- **Status**: functional and passing its 70 tests; serves the identical API;
+  scheduled for removal after the post-cutover soak period
 
 ---
 
 ## Interactive Architecture Page
 
 An interactive visual architecture diagram is served at `/architecture`:
-- **URL:** `https://nr-ubp-dev-02.nihs.ch.nestle.com:49160/architecture`
-- **Source:** `docs/architecture-interactive.html`
-- **Features:** Animated data flow, clickable components, tabbed sections (Data Flow, Layers, Tech Stack, Data Model, Security, Deployment)
+- **URL:** `http://<host>:49160/architecture`
+- **Source:** `docs/architecture-interactive.html` (baked into the Python
+  image at build time — run `./container-py.sh rebuild` after editing)
+- **Features:** animated data flow, clickable components, tabbed sections
+  (Data Flow, Layers, Tech Stack, Data Model, Security, Deployment) — all
+  describing the Python/FastAPI stack
 
 ---
 
-**Last Updated:** May 19, 2026  
+**Last Updated:** July 29, 2026
 **Version:** 2.0

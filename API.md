@@ -525,7 +525,7 @@ Bulk upload chemicals via SDF (Structure Data File). Supports both **V2000** and
 
 The parser extracts structural data (atoms, bonds, coordinates, charges, stereo flags, S-Groups), computes molecular formula (Hill order) and molecular weight from the atom block, and maps over 50 common SDF property field-name variations to the Pandora schema. **Every** `> <FIELD_NAME>` data item is preserved in `metadata` — no field is ever dropped.
 
-Validated against EPA DSSTox / Nestlé regulatory format (77-record fixture: 34 polymers, 36 mixtures, 18 charged-atom records, 6 stereo records). Two implementations expose this identical contract: the legacy Node parser (`server/src/utils/sdfParser.js`, extraction matrix in [`docs/architecture.md`](docs/architecture.md#sdf-parser-serversrcutilssdfparserjs)) and the Python backend's RDKit-based module (`backend/app/utils/sdf.py`).
+Validated against EPA DSSTox / Nestlé regulatory format (77-record fixture: 34 polymers, 36 mixtures, 18 charged-atom records, 6 stereo records). The full extraction matrix is documented in [`docs/architecture.md`](docs/architecture.md#sdf-handling-rdkit). Two implementations expose this identical contract: the Python backend's RDKit-based module (`backend/app/utils/sdf.py`) and the legacy Node parser (`server/src/utils/sdfParser.js`).
 
 **Endpoint:** `POST /chemicals/upload/sdf`
 

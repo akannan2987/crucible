@@ -1,4 +1,4 @@
-# Deployment Guide - Crucible: Pandora Toolbox Enhancement (v2.0)
+# Deployment Guide (Legacy Node Backend) - Crucible: Pandora Toolbox Enhancement (v2.0)
 
 Comprehensive guide for deploying Crucible in different environments.
 
