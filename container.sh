@@ -33,6 +33,39 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# ── Container runtime detection (podman preferred, docker fallback) ──
+# Override with CONTAINER_RUNTIME=podman|docker. Detection is by CLI
+# presence, so podman's docker-compatible socket cannot confuse it.
+if [ -n "$CONTAINER_RUNTIME" ]; then
+    RUNTIME="$CONTAINER_RUNTIME"
+    if ! command -v "$RUNTIME" >/dev/null 2>&1; then
+        echo -e "${RED}✗ CONTAINER_RUNTIME=$RUNTIME but '$RUNTIME' is not installed${NC}"
+        exit 1
+    fi
+elif command -v podman >/dev/null 2>&1; then
+    RUNTIME="podman"
+elif command -v docker >/dev/null 2>&1; then
+    RUNTIME="docker"
+else
+    echo -e "${RED}✗ Neither podman nor docker found. Install one, or set CONTAINER_RUNTIME.${NC}"
+    exit 1
+fi
+
+# On macOS the podman VM does not auto-start on login — check it and give
+# a clear message instead of a cryptic socket error.
+check_podman_machine() {
+    if [ "$RUNTIME" = "podman" ] && [ "$(uname -s)" = "Darwin" ]; then
+        local state
+        state=$(podman machine inspect --format '{{.State}}' 2>/dev/null)
+        if [ "$state" != "running" ]; then
+            echo -e "${RED}✗ The podman machine VM is not running (state: ${state:-not created}).${NC}"
+            echo ""
+            echo "  Start it with:   podman machine start"
+            exit 1
+        fi
+    fi
+}
+
 show_help() {
     echo "╔═══════════════════════════════════════════════════════════╗"
     echo "║   🧪 Crucible: Pandora Toolbox Enhancement (v2.0)        ║"
@@ -61,10 +94,16 @@ show_help() {
 }
 
 build_image() {
-    echo -e "${YELLOW}Building Crucible container image...${NC}"
+    check_podman_machine
+    echo -e "${YELLOW}Building Crucible container image with ${RUNTIME}...${NC}"
     # --format docker is required so the Dockerfile HEALTHCHECK is honored;
-    # podman's default OCI format silently ignores HEALTHCHECK.
-    podman build --format docker -t ${IMAGE_NAME}:latest .
+    # podman's default OCI format silently ignores HEALTHCHECK. Docker
+    # neither needs nor accepts the flag.
+    local format_args=()
+    if [ "$RUNTIME" = "podman" ]; then
+        format_args=(--format docker)
+    fi
+    $RUNTIME build "${format_args[@]}" -t ${IMAGE_NAME}:latest .
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}✓ Image built successfully${NC}"
     else
@@ -74,10 +113,11 @@ build_image() {
 }
 
 start_container() {
+    check_podman_machine
     # Check if container already exists
-    if podman ps -a --format "{{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
+    if $RUNTIME ps -a --format "{{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
         echo -e "${YELLOW}Container already exists. Starting...${NC}"
-        podman start ${CONTAINER_NAME}
+        $RUNTIME start ${CONTAINER_NAME}
     else
         echo -e "${YELLOW}Creating and starting container...${NC}"
         
@@ -91,7 +131,7 @@ start_container() {
         ENV_VARS="-e PORT=${PORT} -e USE_HTTPS=false"
         PORTS="-p ${HOST_BIND}:${PORT}:${PORT}"
         
-        podman run -d \
+        $RUNTIME run -d \
             --name ${CONTAINER_NAME} \
             ${PORTS} \
             ${VOLUMES} \
@@ -113,6 +153,7 @@ start_container() {
 }
 
 start_container_ssl() {
+    check_podman_machine
     # Check if certificates exist
     if [ ! -f "${CERTS_DIR}/server.crt" ] || [ ! -f "${CERTS_DIR}/server.key" ]; then
         echo -e "${RED}✗ SSL certificates not found!${NC}"
@@ -125,10 +166,10 @@ start_container_ssl() {
     fi
     
     # Stop existing container if running
-    if podman ps -a --format "{{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
+    if $RUNTIME ps -a --format "{{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
         echo -e "${YELLOW}Stopping existing container...${NC}"
-        podman stop ${CONTAINER_NAME} 2>/dev/null
-        podman rm ${CONTAINER_NAME} 2>/dev/null
+        $RUNTIME stop ${CONTAINER_NAME} 2>/dev/null
+        $RUNTIME rm ${CONTAINER_NAME} 2>/dev/null
     fi
     
     echo -e "${YELLOW}Creating and starting container with HTTPS...${NC}"
@@ -136,7 +177,7 @@ start_container_ssl() {
     # Create directories
     mkdir -p ${DATA_DIR}
     
-    podman run -d \
+    $RUNTIME run -d \
         --name ${CONTAINER_NAME} \
         -p ${HOST_BIND}:${PORT}:${PORT} \
         -p ${HOST_BIND}:${HTTPS_PORT}:${HTTPS_PORT} \
@@ -183,10 +224,10 @@ start_container_dev() {
     fi
 
     # Stop existing container if running
-    if podman ps -a --format "{{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
+    if $RUNTIME ps -a --format "{{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
         echo -e "${YELLOW}Stopping existing container…${NC}"
-        podman stop ${CONTAINER_NAME} 2>/dev/null
-        podman rm ${CONTAINER_NAME} 2>/dev/null
+        $RUNTIME stop ${CONTAINER_NAME} 2>/dev/null
+        $RUNTIME rm ${CONTAINER_NAME} 2>/dev/null
     fi
 
     mkdir -p ${DATA_DIR}
@@ -195,7 +236,7 @@ start_container_dev() {
 
     # Override CMD to run nodemon so server restarts on src/ changes.
     # CHOKIDAR_USEPOLLING + --legacy-watch is required for bind-mounts over GPFS.
-    podman run -d \
+    $RUNTIME run -d \
         --name ${CONTAINER_NAME} \
         -p ${HOST_BIND}:${PORT}:${PORT} \
         -p ${HOST_BIND}:${HTTPS_PORT}:${HTTPS_PORT} \
@@ -274,7 +315,7 @@ setup_ssl() {
 
 stop_container() {
     echo -e "${YELLOW}Stopping container...${NC}"
-    podman stop ${CONTAINER_NAME} 2>/dev/null
+    $RUNTIME stop ${CONTAINER_NAME} 2>/dev/null
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}✓ Container stopped${NC}"
     else
@@ -290,16 +331,16 @@ restart_container() {
 
 show_logs() {
     echo -e "${YELLOW}Container logs:${NC}"
-    podman logs -f ${CONTAINER_NAME}
+    $RUNTIME logs -f ${CONTAINER_NAME}
 }
 
 show_status() {
     echo -e "${YELLOW}Container status:${NC}"
-    podman ps -a --filter name=${CONTAINER_NAME} --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+    $RUNTIME ps -a --filter name=${CONTAINER_NAME} --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
     echo ""
     
     # Check if running and show health
-    if podman ps --format "{{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
+    if $RUNTIME ps --format "{{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
         echo -e "${GREEN}✓ Container is running${NC}"
         echo ""
         echo "Testing API endpoint..."
@@ -312,14 +353,14 @@ show_status() {
 
 open_shell() {
     echo -e "${YELLOW}Opening shell in container...${NC}"
-    podman exec -it ${CONTAINER_NAME} /bin/sh
+    $RUNTIME exec -it ${CONTAINER_NAME} /bin/sh
 }
 
 clean_up() {
     echo -e "${YELLOW}Cleaning up container and image...${NC}"
-    podman stop ${CONTAINER_NAME} 2>/dev/null
-    podman rm ${CONTAINER_NAME} 2>/dev/null
-    podman rmi ${IMAGE_NAME}:latest 2>/dev/null
+    $RUNTIME stop ${CONTAINER_NAME} 2>/dev/null
+    $RUNTIME rm ${CONTAINER_NAME} 2>/dev/null
+    $RUNTIME rmi ${IMAGE_NAME}:latest 2>/dev/null
     echo -e "${GREEN}✓ Cleanup complete${NC}"
 }
 

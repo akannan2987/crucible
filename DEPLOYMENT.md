@@ -4,6 +4,14 @@ Comprehensive guide for deploying Crucible in different environments.
 
 ---
 
+> **Python backend (FastAPI):** the Node stack documented here is being
+> replaced by the Python backend in `backend/`. For the Python deployment,
+> the three step-by-step runbooks — **macOS (Docker)**, **macOS (Podman)**
+> and **RHEL8 VM (Podman)** — plus the cutover checklist and rollback path
+> live in [MIGRATION.md](MIGRATION.md). Both `container.sh` (Node) and
+> `container-py.sh` (Python) auto-detect podman/docker; override with
+> `CONTAINER_RUNTIME=docker|podman`.
+
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)

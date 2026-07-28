@@ -12,6 +12,13 @@ data
 server/data
 certs
 
+# Python virtualenv and caches — never copy into an image (wrong arch,
+# and the backend Dockerfile pip-installs its own dependencies)
+backend/.venv
+**/__pycache__
+**/.pytest_cache
+*.db
+
 # Repo/VCS and OS noise
 .git
 .gitignore
