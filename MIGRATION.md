@@ -230,6 +230,10 @@ git clone https://github.com/akannan2987/crucible.git && cd crucible   # first t
 cd /path/to/crucible && git pull                                       # update
 chmod +x container-py.sh container.sh                                  # first time only
 
+# (Shortcut: ./setup-after-clone-py.sh does steps 2, 4, 5, 6 plus SSL-cert
+#  copy and the monitoring cron in one command. The manual steps below
+#  remain for understanding and for troubleshooting.)
+
 # 2. Build the Python backend image (native linux/amd64 build)
 ./container-py.sh build
 
@@ -273,6 +277,56 @@ curl --noproxy '*' -s http://localhost:49160/ | grep -o '<title>[^<]*</title>'
 # 8. Update to a new version
 git pull && ./container-py.sh rebuild
 ```
+
+### Enable HTTPS (optional)
+
+The Python backend serves TLS in-process (uvicorn), exactly like the legacy
+Node stack — same `certs/` directory, same env-var names:
+
+```bash
+# One-time: put certificates in certs/ —
+./setup-after-clone.sh        # copies the Nestlé-signed certs from the GPFS store (VM)
+# or, for a self-signed dev cert:  ./setup-ssl.sh
+
+# Start in TLS mode (recreates the container with certs mounted read-only)
+./container-py.sh start-ssl
+
+# Verify (-k only needed for self-signed certs)
+curl --noproxy '*' -sk https://localhost:49160/api/stats
+```
+
+The app is then at `https://nr-ubp-dev-02.nihs.ch.nestle.com:49160`. Notes:
+
+- HTTPS *replaces* HTTP on the port (like the Node stack) — plain
+  `http://` requests are refused. Switch back anytime with
+  `./container-py.sh stop && podman rm crucible-py && ./container-py.sh start`.
+- The container healthcheck probes HTTP then HTTPS, so it stays `healthy`
+  in either mode.
+- If `monitor.sh` runs in cron, point it at TLS:
+  `CONTAINER_NAME=crucible-py API_URL=https://localhost:49160/api/stats ./monitor.sh`
+- In the Quadlet unit, add `Environment=USE_HTTPS=true` and
+  `Volume=%h/crucible/certs:/app/certs:Z,ro` (plus the SSL_CERT_PATH /
+  SSL_KEY_PATH environment lines if your file names differ).
+- Missing/unreadable certificates never take the app down — it logs a
+  warning and falls back to HTTP (same graceful behaviour as Express).
+
+### Health monitoring (cron)
+
+`setup-after-clone-py.sh` installs this automatically (replacing any legacy
+`monitor.sh` entry, which would try to restart the wrong container). Manual
+install / check:
+
+```bash
+crontab -l | grep monitor.sh          # is it installed, and for which container?
+# correct entry for the Python backend (use https:// after start-ssl):
+# */5 * * * * cd /path/to/crucible && CONTAINER_NAME=crucible-py API_URL=http://localhost:49160/api/stats ./monitor.sh
+tail -5 /tmp/crucible-monitor.log     # what has it been doing?
+```
+
+⚠️ A leftover **legacy** entry (`.../monitor.sh` with no `CONTAINER_NAME`)
+monitors the Node container `crucible` — on failure it restarts the wrong
+thing. Replace it with the line above (or re-run `SETUP_MONITOR=y
+./setup-after-clone-py.sh`).
 
 ### Auto-start on boot (systemd)
 
@@ -409,10 +463,10 @@ database backup instead: `./container-py.sh restore backups/crucible-<stamp>.db`
 - **Schema normalisation** — the `doc` JSON pattern preserves the contract;
   promoting hot fields (name, CAS, dates) into real columns with indexes is
   an incremental follow-up once the Express server is retired.
-- **HTTPS for the Python backend** — the Node stack's TLS mode was not
-  ported (HTTP only, like the current production setup). Terminate TLS at a
-  reverse proxy (nginx/caddy) or add uvicorn `--ssl-certfile/--ssl-keyfile`
-  when needed.
+- ~~HTTPS for the Python backend~~ — **done**: `./container-py.sh start-ssl`
+  serves TLS in-process via uvicorn with the same `certs/` setup as the Node
+  stack (see Runbook C → "Enable HTTPS"). Remaining niceties: certificate
+  expiry monitoring, HTTP→HTTPS redirect on a second port if ever wanted.
 - **Retire the Express server** — after the soak period: delete `server/`,
   `container.sh`, `Dockerfile` (Node), and simplify `start*.sh`.
 

@@ -59,6 +59,8 @@ cd client && VITE_API_PROXY_TARGET=http://localhost:8000 npm run dev
 | `PORT` | `49160` | HTTP port read by the app itself (`python -m app.main`). Note: the container scripts pass this in for you and ignore a shell-inherited `PORT` — use `CRUCIBLE_PORT=<n>` with `container-py.sh` |
 | `DATABASE_URL` | `sqlite:///<repo>/data/crucible.db` | SQLAlchemy connection string. PostgreSQL later: `postgresql+psycopg://user:pass@host/db` (add `psycopg[binary]` to requirements) |
 | `CLIENT_DIST` | `<repo>/client/dist` | Built React app served as static files |
+| `USE_HTTPS` | `false` | `true` + cert files present → uvicorn serves TLS directly (falls back to HTTP with a warning if certs are missing) |
+| `SSL_CERT_PATH` / `SSL_KEY_PATH` | `/app/certs/server.crt` / `.key` | Certificate/key locations (same names as the legacy Node stack) |
 | `LOWDB_PATH` | `<repo>/data/pandora.json` | Source file for the migration script |
 
 ## Live parity diff (optional but recommended before cutover)

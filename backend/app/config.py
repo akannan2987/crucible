@@ -42,6 +42,13 @@ PORT: int = int(os.environ.get("PORT", "49160"))
 _default_sqlite = f"sqlite:///{REPO_ROOT / 'data' / 'crucible.db'}"
 DATABASE_URL: str = os.environ.get("DATABASE_URL", _default_sqlite)
 
+# HTTPS (same env-var names as the legacy Node stack, so the certs/ setup
+# scripts work unchanged). When USE_HTTPS=true and both files exist, uvicorn
+# serves TLS directly — no reverse proxy needed.
+USE_HTTPS: bool = os.environ.get("USE_HTTPS", "false").lower() == "true"
+SSL_CERT_PATH: Path = Path(os.environ.get("SSL_CERT_PATH", "/app/certs/server.crt"))
+SSL_KEY_PATH: Path = Path(os.environ.get("SSL_KEY_PATH", "/app/certs/server.key"))
+
 # Soft capacity targets used by the dashboard gauge (NOT enforced limits) —
 # same constants as the Express stats route.
 CHEMICALS_MAX = 15000

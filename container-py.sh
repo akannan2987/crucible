@@ -18,6 +18,7 @@ IMAGE_NAME="crucible-py"
 CONTAINER_NAME="crucible-py"
 DATA_DIR="$(pwd)/data"
 BACKUP_DIR="${BACKUP_DIR:-$(pwd)/backups}"
+CERTS_DIR="$(pwd)/certs"
 
 # ── Port selection ──────────────────────────────────────────────────
 # Use CRUCIBLE_PORT to override the port. A generic PORT variable from the
@@ -99,7 +100,8 @@ show_help() {
     echo ""
     echo "Commands:"
     echo "  build       Build the Python backend image"
-    echo "  start       Start the container (port ${PORT})"
+    echo "  start       Start the container (HTTP, port ${PORT})"
+    echo "  start-ssl   Start with HTTPS (needs certs/server.crt + server.key)"
     echo "  stop        Stop the container"
     echo "  restart     Restart the container"
     echo "  rebuild     Rebuild image and restart container"
@@ -197,6 +199,51 @@ rebuild() {
     $RUNTIME stop ${CONTAINER_NAME} 2>/dev/null
     $RUNTIME rm ${CONTAINER_NAME} 2>/dev/null
     start_container
+}
+
+start_container_ssl() {
+    check_podman_machine
+    if [ ! -f "${CERTS_DIR}/server.crt" ] || [ ! -f "${CERTS_DIR}/server.key" ]; then
+        echo -e "${RED}✗ SSL certificates not found in ${CERTS_DIR}/${NC}"
+        echo ""
+        echo "  Self-signed (dev):    ./setup-ssl.sh"
+        echo "  Nestlé certs (VM):    ./setup-after-clone.sh   (copies from the GPFS store)"
+        exit 1
+    fi
+
+    # Recreate the container: TLS mode changes its env + mounts.
+    if $RUNTIME ps -a --format "{{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
+        echo -e "${YELLOW}Recreating container '${CONTAINER_NAME}' with HTTPS...${NC}"
+        $RUNTIME stop ${CONTAINER_NAME} 2>/dev/null
+        $RUNTIME rm ${CONTAINER_NAME} 2>/dev/null
+    fi
+    mkdir -p "${DATA_DIR}"
+
+    $RUNTIME run -d \
+        --name ${CONTAINER_NAME} \
+        -p ${HOST_BIND}:${PORT}:${PORT} \
+        -v "${DATA_DIR}:/app/data:Z" \
+        -v "${CERTS_DIR}:/app/certs:Z,ro" \
+        -e PORT=${PORT} \
+        -e USE_HTTPS=true \
+        -e SSL_CERT_PATH=/app/certs/server.crt \
+        -e SSL_KEY_PATH=/app/certs/server.key \
+        --restart unless-stopped \
+        ${IMAGE_NAME}:latest
+
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✓ Container started with HTTPS${NC}"
+        echo ""
+        echo -e "${BLUE}🔒 Access the application at:${NC}"
+        echo "  https://localhost:${PORT}"
+        echo "  https://$(hostname):${PORT}   (from another machine)"
+        echo ""
+        echo -e "${YELLOW}Note: self-signed certificates trigger a browser warning"
+        echo -e "(Advanced → Proceed). Nestlé-signed certificates do not.${NC}"
+    else
+        echo -e "${RED}✗ Failed to start container with HTTPS${NC}"
+        exit 1
+    fi
 }
 
 backup_data() {
@@ -323,6 +370,7 @@ clean_up() {
 case "$1" in
     build)    build_image ;;
     start)    start_container ;;
+    start-ssl) start_container_ssl ;;
     stop)     stop_container ;;
     restart)  restart_container ;;
     rebuild)  rebuild ;;

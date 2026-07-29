@@ -24,7 +24,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from .config import CLIENT_DIST, DOCS_DIR, PORT
+from .config import CLIENT_DIST, DOCS_DIR, PORT, SSL_CERT_PATH, SSL_KEY_PATH, USE_HTTPS
 from .database import init_db
 from .routers import chemicals, samples, screening, stats, toxicology
 
@@ -115,4 +115,21 @@ app = create_app()
 if __name__ == "__main__":
     # Bind 0.0.0.0 so the same container/image works on macOS and RHEL8;
     # the port comes from the PORT env var (default 49160), like Express.
-    uvicorn.run(app, host=os.environ.get("HOST", "0.0.0.0"), port=PORT)
+    host = os.environ.get("HOST", "0.0.0.0")
+
+    if USE_HTTPS and SSL_CERT_PATH.is_file() and SSL_KEY_PATH.is_file():
+        print(f"🔒 HTTPS enabled — cert: {SSL_CERT_PATH}")
+        uvicorn.run(
+            app,
+            host=host,
+            port=PORT,
+            ssl_certfile=str(SSL_CERT_PATH),
+            ssl_keyfile=str(SSL_KEY_PATH),
+        )
+    else:
+        # Same graceful fallback the Express server had: missing certs
+        # must not take the app down.
+        if USE_HTTPS:
+            print(f"⚠️  USE_HTTPS=true but certificates not found "
+                  f"({SSL_CERT_PATH} / {SSL_KEY_PATH}) — starting HTTP instead.")
+        uvicorn.run(app, host=host, port=PORT)

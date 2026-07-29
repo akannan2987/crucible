@@ -48,12 +48,10 @@ ENV PYTHONUNBUFFERED=1
 
 EXPOSE 49160
 
-# Health check against the stats endpoint.
-# 127.0.0.1 (not localhost): in-container localhost resolves to ::1 first
-# and the server binds IPv4 0.0.0.0. Shell form so ${PORT} expands at runtime.
-# python-based check because the slim image ships no wget/curl.
+# Health check against the stats endpoint — tries HTTP then HTTPS, so the
+# same image is healthy in both modes (see backend/scripts/healthcheck.py).
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-  CMD python -c "import urllib.request,os,sys; sys.exit(0 if urllib.request.urlopen(f'http://127.0.0.1:{os.environ.get(\"PORT\",\"49160\")}/api/stats', timeout=8).status==200 else 1)" || exit 1
+  CMD python /app/backend/scripts/healthcheck.py || exit 1
 
 WORKDIR /app/backend
 CMD ["python", "-m", "app.main"]

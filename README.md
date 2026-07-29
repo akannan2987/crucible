@@ -12,6 +12,11 @@ A comprehensive web application for managing chemical compounds, samples, screen
 git clone https://github.com/akannan2987/crucible.git
 cd crucible
 
+# One command does everything (certs if available, build, start, migrate,
+# verify, optional monitoring cron) — on macOS AND the RHEL8 VM:
+./setup-after-clone-py.sh
+
+# Or the individual steps:
 ./container-py.sh build      # build (auto-detects podman or docker)
 ./container-py.sh start      # run on http://localhost:49160
 ./container-py.sh migrate    # import existing lowdb data (idempotent)
@@ -231,7 +236,8 @@ App URL: `http://nr-ubp-dev-02.nihs.ch.nestle.com:49160`. Firewall notes
 
 ```bash
 ./container-py.sh build       # Build image (node build stage + python:3.12-slim)
-./container-py.sh start       # Start on port 49160
+./container-py.sh start       # Start on port 49160 (HTTP)
+./container-py.sh start-ssl   # Start with HTTPS (certs/server.crt + server.key)
 ./container-py.sh migrate     # lowdb → SQLite import (idempotent)
 ./container-py.sh status      # Status + /api/stats healthcheck
 ./container-py.sh logs        # View logs
@@ -284,7 +290,11 @@ machine-to-machine transfer: **[MIGRATION.md §11](MIGRATION.md#11-backup--resto
 
 ## 🔒 HTTPS / SSL Configuration
 
-The application uses **HTTPS with official Nestlé SSL certificates** for encrypted communication.
+Both backends can serve **HTTPS with official Nestlé SSL certificates** from
+the same `certs/` directory: Python via `./container-py.sh start-ssl`
+(uvicorn TLS — see [MIGRATION.md Runbook C → "Enable HTTPS"](MIGRATION.md)),
+legacy Node via `./container.sh start-ssl`. Note: HTTPS is transport
+encryption; user *authentication* (SSO login) is still a planned enhancement.
 
 ### Certificate Source
 
