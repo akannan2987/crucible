@@ -50,7 +50,9 @@ podman rm   pandora-toolbox crucible 2>/dev/null
 # 3. Rebuild the image with the new port baked in
 ./container.sh build
 
-# 4. Open the new port in firewalld and close the old one
+# 4. Open the new port and close the old one.
+#    NOTE: if `firewall-cmd` is not found, this VM does not run firewalld —
+#    see MIGRATION.md Runbook C step 3 for the iptables / no-firewall cases.
 sudo firewall-cmd --permanent --add-port=49160/tcp
 sudo firewall-cmd --permanent --remove-port=5942/tcp   # ok if it reports "not enabled"
 sudo firewall-cmd --reload
