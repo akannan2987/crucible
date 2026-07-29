@@ -505,7 +505,13 @@ A dedicated `uninstall.sh` script handles all cleanup operations:
 ./uninstall.sh --dry-run
 ```
 
-The script covers: container, image, cron job, monitor logs, SSL certs, data, node_modules, build artifacts, systemd service, and project directory removal.
+The script covers **both stacks** (Python `crucible-py` and legacy Node
+`crucible`) under **podman or docker**: containers, images, the monitoring
+cron job and logs, SSL certs, application data (`crucible.db` +
+`pandora.json`, with a final safety backup to `~/crucible-backups`), local
+`backups/`, `node_modules` + `client/dist`, `backend/.venv` + Python caches,
+systemd services (system-wide, rootless user unit, and Quadlet), and the
+project directory.
 
 📚 **[View Full Uninstall Details →](DEPLOYMENT.md#uninstall--cleanup)**
 

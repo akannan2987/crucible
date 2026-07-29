@@ -1018,6 +1018,11 @@ data/           # Database with real data
 
 Instructions for partially or completely removing Crucible from the system.
 
+> ℹ️ `uninstall.sh` covers **both** stacks (Python `crucible-py` and legacy
+> Node `crucible`) and auto-detects podman/docker — the manual steps below
+> describe the legacy stack; the Python-stack summary is in
+> [MIGRATION.md §12](MIGRATION.md#12-uninstall).
+
 ### Using the Uninstall Script (Recommended)
 
 The easiest way to clean up is with the `uninstall.sh` script:

@@ -19,6 +19,7 @@ VM **from this document alone**.
 9. [Rollback path](#9-rollback-path)
 10. [Open items](#10-open-items)
 11. [Backup & Restore (Python backend)](#11-backup--restore-python-backend)
+12. [Uninstall](#12-uninstall)
 
 ---
 
@@ -535,3 +536,31 @@ off-machine periodically (e.g. `scp` to your workstation or a network share)
 
 > Legacy note: backup of the **Node** stack (pandora.json only) is covered in
 > DEPLOYMENT.md → "Backup and Restore"; it stays relevant only until cutover.
+
+---
+
+## 12. Uninstall
+
+`./uninstall.sh` removes the deployment — **both stacks, both runtimes, both
+platforms**. Modes:
+
+```bash
+./uninstall.sh --dry-run     # preview everything it would remove (safe)
+./uninstall.sh --partial     # remove runtime artifacts; keep source code & data
+./uninstall.sh --full        # remove EVERYTHING (final data backup taken first)
+./uninstall.sh               # interactive: choose step by step
+```
+
+What it covers for the Python stack: `crucible-py` container + image, the
+monitoring cron entry and `/tmp/crucible-monitor.log`, `data/crucible.db`
+(backed up to `~/crucible-backups` before deletion in full mode), the local
+`backups/` directory, `backend/.venv` and Python caches, and the rootless
+systemd / Quadlet units from §6 (with a reminder to `loginctl
+disable-linger`). Legacy Node artifacts (container `crucible`, node_modules,
+certs, pandora.json) are handled in the same pass. Base images
+(python:3.12-slim, node:18-alpine) are left in place — prune manually if
+wanted.
+
+On the RHEL8 VM, remember the firewall rule if one was added
+(`sudo iptables -D INPUT -p tcp --dport 49160 -j ACCEPT`, or the
+firewalld `--remove-port` variant).

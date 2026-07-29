@@ -7,10 +7,18 @@
 set -euo pipefail
 
 # ── Configuration ────────────────────────────────────────────
-IMAGE_NAME="crucible"
-CONTAINER_NAME="crucible"
+# Covers BOTH stacks: the Python backend (crucible-py) and the legacy
+# Node backend (crucible).
+IMAGES="crucible-py crucible"
+CONTAINERS="crucible-py crucible"
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
-MONITOR_LOG="/tmp/pandora-monitor.log"
+MONITOR_LOGS="/tmp/crucible-monitor.log /tmp/pandora-monitor.log"
+
+# Runtime detection (same convention as container*.sh)
+if [ -n "${CONTAINER_RUNTIME:-}" ]; then RUNTIME="$CONTAINER_RUNTIME"
+elif command -v podman >/dev/null 2>&1; then RUNTIME="podman"
+elif command -v docker >/dev/null 2>&1; then RUNTIME="docker"
+else RUNTIME=":"; fi   # ':' = no-op → container steps report "not found" gracefully
 
 # ── Colors ───────────────────────────────────────────────────
 RED='\033[0;31m'
@@ -66,45 +74,54 @@ show_help() {
 
 stop_container() {
     echo ""
-    echo -e "${BOLD}Step 1: Stop Container${NC}"
-    if podman ps --format '{{.Names}}' 2>/dev/null | grep -q "^${CONTAINER_NAME}$"; then
-        podman stop "${CONTAINER_NAME}" 2>/dev/null
-        success "Container '${CONTAINER_NAME}' stopped"
-    else
-        info "Container '${CONTAINER_NAME}' is not running"
-    fi
+    echo -e "${BOLD}Step 1: Stop Containers (both stacks)${NC}"
+    local name
+    for name in ${CONTAINERS}; do
+        if $RUNTIME ps --format '{{.Names}}' 2>/dev/null | grep "^${name}$" >/dev/null; then
+            $RUNTIME stop "${name}" 2>/dev/null
+            success "Container '${name}' stopped"
+        else
+            info "Container '${name}' is not running"
+        fi
+    done
 }
 
 remove_container() {
     echo ""
-    echo -e "${BOLD}Step 2: Remove Container${NC}"
-    if podman ps -a --format '{{.Names}}' 2>/dev/null | grep -q "^${CONTAINER_NAME}$"; then
-        podman rm -f "${CONTAINER_NAME}" 2>/dev/null
-        success "Container '${CONTAINER_NAME}' removed"
-    else
-        info "Container '${CONTAINER_NAME}' does not exist"
-        skip
-    fi
+    echo -e "${BOLD}Step 2: Remove Containers (both stacks)${NC}"
+    local name found=0
+    for name in ${CONTAINERS}; do
+        if $RUNTIME ps -a --format '{{.Names}}' 2>/dev/null | grep "^${name}$" >/dev/null; then
+            $RUNTIME rm -f "${name}" 2>/dev/null
+            success "Container '${name}' removed"
+            found=1
+        fi
+    done
+    [ "$found" -eq 0 ] && { info "No crucible containers exist"; skip; }
 }
 
 remove_image() {
     echo ""
-    echo -e "${BOLD}Step 3: Remove Container Image${NC}"
-    if podman images --format '{{.Repository}}:{{.Tag}}' 2>/dev/null | grep -q "^${IMAGE_NAME}:latest$"; then
-        podman rmi "${IMAGE_NAME}:latest" 2>/dev/null
-        success "Image '${IMAGE_NAME}:latest' removed"
-    else
-        info "Image '${IMAGE_NAME}:latest' does not exist"
-        skip
-    fi
+    echo -e "${BOLD}Step 3: Remove Container Images (both stacks)${NC}"
+    local name found=0
+    for name in ${IMAGES}; do
+        if $RUNTIME images --format '{{.Repository}}:{{.Tag}}' 2>/dev/null | grep "${name}:latest$" >/dev/null; then
+            $RUNTIME rmi "${name}:latest" 2>/dev/null
+            success "Image '${name}:latest' removed"
+            found=1
+        fi
+    done
+    [ "$found" -eq 0 ] && { info "No crucible images exist"; skip; }
 
     # Prune dangling images
     local dangling
-    dangling=$(podman images -f "dangling=true" -q 2>/dev/null | wc -l)
+    dangling=$($RUNTIME images -f "dangling=true" -q 2>/dev/null | wc -l)
     if [ "$dangling" -gt 0 ]; then
-        podman image prune -f >/dev/null 2>&1
+        $RUNTIME image prune -f >/dev/null 2>&1
         success "Pruned ${dangling} dangling image(s)"
     fi
+    info "Base images (python:3.12-slim, node:18-alpine) are left in place;"
+    info "remove with '$RUNTIME image prune -a' if you want them gone too."
 }
 
 remove_cron() {
@@ -118,10 +135,13 @@ remove_cron() {
         skip
     fi
 
-    if [ -f "${MONITOR_LOG}" ]; then
-        rm -f "${MONITOR_LOG}"
-        success "Monitor log removed (${MONITOR_LOG})"
-    fi
+    local log
+    for log in ${MONITOR_LOGS}; do
+        if [ -f "${log}" ]; then
+            rm -f "${log}"
+            success "Monitor log removed (${log})"
+        fi
+    done
 }
 
 remove_certs() {
@@ -139,16 +159,25 @@ remove_certs() {
 
 backup_data() {
     echo ""
-    echo -e "${BOLD}Step 6a: Backup Application Data${NC}"
-    if [ -f "${PROJECT_DIR}/data/pandora.json" ]; then
-        local backup_dir="${HOME}/pandora-backups"
-        local backup_file="${backup_dir}/pandora-final-$(date +%Y%m%d-%H%M%S).json"
-        mkdir -p "${backup_dir}"
-        cp "${PROJECT_DIR}/data/pandora.json" "${backup_file}"
-        success "Database backed up to ${backup_file}"
-    else
-        info "No database file found to back up"
+    echo -e "${BOLD}Step 6a: Backup Application Data (both databases)${NC}"
+    local backup_dir="${HOME}/crucible-backups"
+    local stamp
+    stamp=$(date +%Y%m%d-%H%M%S)
+    local found=0
+    mkdir -p "${backup_dir}"
+    # Containers are already stopped at this point, so plain copies are safe
+    # (never copy a RUNNING SQLite database — see MIGRATION.md §11).
+    if [ -f "${PROJECT_DIR}/data/crucible.db" ]; then
+        cp "${PROJECT_DIR}/data/crucible.db" "${backup_dir}/crucible-final-${stamp}.db"
+        success "SQLite database backed up to ${backup_dir}/crucible-final-${stamp}.db"
+        found=1
     fi
+    if [ -f "${PROJECT_DIR}/data/pandora.json" ]; then
+        cp "${PROJECT_DIR}/data/pandora.json" "${backup_dir}/pandora-final-${stamp}.json"
+        success "Legacy lowdb file backed up to ${backup_dir}/pandora-final-${stamp}.json"
+        found=1
+    fi
+    [ "$found" -eq 0 ] && info "No database files found to back up"
 }
 
 remove_data() {
@@ -156,22 +185,28 @@ remove_data() {
     echo -e "${BOLD}Step 6b: Remove Application Data${NC}"
     if [ -d "${PROJECT_DIR}/data" ]; then
         rm -rf "${PROJECT_DIR}/data"
-        success "Data directory removed"
+        success "Data directory removed (crucible.db + pandora.json)"
     else
         info "No data directory found"
         skip
     fi
 
-    # Remove named volume if it exists
-    if podman volume exists pandora-data 2>/dev/null; then
-        podman volume rm pandora-data 2>/dev/null
-        success "Podman volume 'pandora-data' removed"
+    if [ -d "${PROJECT_DIR}/backups" ]; then
+        rm -rf "${PROJECT_DIR}/backups"
+        success "Local backups directory removed (backups/)"
+        info "Final safety copies remain in ~/crucible-backups"
+    fi
+
+    # Remove named volume if it exists (legacy)
+    if $RUNTIME volume exists pandora-data 2>/dev/null; then
+        $RUNTIME volume rm pandora-data 2>/dev/null
+        success "Volume 'pandora-data' removed"
     fi
 }
 
 remove_node_modules() {
     echo ""
-    echo -e "${BOLD}Step 7: Remove node_modules & Build Artifacts${NC}"
+    echo -e "${BOLD}Step 7: Remove Dependencies & Build Artifacts (Node + Python)${NC}"
     local freed=0
 
     for dir in "${PROJECT_DIR}/node_modules" "${PROJECT_DIR}/client/node_modules" "${PROJECT_DIR}/server/node_modules"; do
@@ -190,15 +225,54 @@ remove_node_modules() {
         freed=1
     fi
 
-    [ "$freed" -eq 0 ] && { info "No node_modules or build artifacts found"; skip; }
+    # Python artifacts (new backend)
+    if [ -d "${PROJECT_DIR}/backend/.venv" ]; then
+        local vsize
+        vsize=$(du -sh "${PROJECT_DIR}/backend/.venv" 2>/dev/null | cut -f1)
+        rm -rf "${PROJECT_DIR}/backend/.venv"
+        success "Removed backend/.venv (${vsize})"
+        freed=1
+    fi
+    if find "${PROJECT_DIR}/backend" -type d \( -name "__pycache__" -o -name ".pytest_cache" \) 2>/dev/null | grep -q .; then
+        find "${PROJECT_DIR}/backend" -type d \( -name "__pycache__" -o -name ".pytest_cache" \) -exec rm -rf {} + 2>/dev/null || true
+        success "Removed Python caches (__pycache__, .pytest_cache)"
+        freed=1
+    fi
+
+    [ "$freed" -eq 0 ] && { info "No dependency or build artifacts found"; skip; }
 }
 
 remove_systemd() {
     echo ""
-    echo -e "${BOLD}Step 8: Remove systemd Service (if configured)${NC}"
+    echo -e "${BOLD}Step 8: Remove systemd Services (rootless + system, if configured)${NC}"
+    local found=0
+
+    # Rootless user units from MIGRATION.md §6 (RHEL8: podman generate systemd / Quadlet)
+    local user_unit="${HOME}/.config/systemd/user/container-crucible-py.service"
+    if [ -f "$user_unit" ]; then
+        systemctl --user stop container-crucible-py.service 2>/dev/null || true
+        systemctl --user disable container-crucible-py.service 2>/dev/null || true
+        rm -f "$user_unit"
+        systemctl --user daemon-reload 2>/dev/null || true
+        success "User systemd unit removed (container-crucible-py.service)"
+        found=1
+    fi
+    local quadlet="${HOME}/.config/containers/systemd/crucible-py.container"
+    if [ -f "$quadlet" ]; then
+        systemctl --user stop crucible-py.service 2>/dev/null || true
+        rm -f "$quadlet"
+        systemctl --user daemon-reload 2>/dev/null || true
+        success "Quadlet unit removed (crucible-py.container)"
+        found=1
+    fi
+    if [ "$found" -eq 1 ]; then
+        info "Login lingering was left enabled; disable with: sudo loginctl disable-linger \$USER"
+    fi
+
+    # Legacy system-wide unit
     local service_file="/etc/systemd/system/crucible.service"
     if [ -f "$service_file" ]; then
-        warn "systemd service found — requires sudo to remove"
+        warn "System-wide systemd service found — requires sudo to remove"
         if confirm "Remove systemd service?"; then
             sudo systemctl stop crucible 2>/dev/null || true
             sudo systemctl disable crucible 2>/dev/null || true
@@ -208,10 +282,10 @@ remove_systemd() {
         else
             warn "Skipped systemd service removal"
         fi
-    else
-        info "No systemd service installed"
-        skip
+        found=1
     fi
+
+    [ "$found" -eq 0 ] && { info "No systemd services installed"; skip; }
 }
 
 remove_project() {
@@ -247,19 +321,24 @@ dry_run() {
     echo -e "${BOLD}Dry Run — the following items would be removed:${NC}"
     echo ""
 
-    # Container
-    if podman ps -a --format '{{.Names}}' 2>/dev/null | grep -q "^${CONTAINER_NAME}$"; then
-        echo -e "  ${RED}✗${NC} Container: ${CONTAINER_NAME}"
-    else
-        echo -e "  ${GREEN}✓${NC} Container: (already removed)"
-    fi
+    # Containers (both stacks)
+    local name
+    for name in ${CONTAINERS}; do
+        if $RUNTIME ps -a --format '{{.Names}}' 2>/dev/null | grep "^${name}$" >/dev/null; then
+            echo -e "  ${RED}✗${NC} Container: ${name}"
+        else
+            echo -e "  ${GREEN}✓${NC} Container ${name}: (already removed)"
+        fi
+    done
 
-    # Image
-    if podman images --format '{{.Repository}}:{{.Tag}}' 2>/dev/null | grep -q "^${IMAGE_NAME}:latest$"; then
-        echo -e "  ${RED}✗${NC} Image: ${IMAGE_NAME}:latest"
-    else
-        echo -e "  ${GREEN}✓${NC} Image: (already removed)"
-    fi
+    # Images (both stacks)
+    for name in ${IMAGES}; do
+        if $RUNTIME images --format '{{.Repository}}:{{.Tag}}' 2>/dev/null | grep "${name}:latest$" >/dev/null; then
+            echo -e "  ${RED}✗${NC} Image: ${name}:latest"
+        else
+            echo -e "  ${GREEN}✓${NC} Image ${name}: (already removed)"
+        fi
+    done
 
     # Cron
     if crontab -l 2>/dev/null | grep -q 'monitor.sh'; then
@@ -268,12 +347,15 @@ dry_run() {
         echo -e "  ${GREEN}✓${NC} Cron job: (none found)"
     fi
 
-    # Monitor log
-    if [ -f "${MONITOR_LOG}" ]; then
-        echo -e "  ${RED}✗${NC} Monitor log: ${MONITOR_LOG}"
-    else
-        echo -e "  ${GREEN}✓${NC} Monitor log: (not found)"
-    fi
+    # Monitor logs
+    local log
+    for log in ${MONITOR_LOGS}; do
+        if [ -f "${log}" ]; then
+            echo -e "  ${RED}✗${NC} Monitor log: ${log}"
+        else
+            echo -e "  ${GREEN}✓${NC} Monitor log ${log}: (not found)"
+        fi
+    done
 
     # Certs
     if [ -d "${PROJECT_DIR}/certs" ]; then
@@ -289,6 +371,20 @@ dry_run() {
         echo -e "  ${RED}✗${NC} Application data: data/ (${dbsize})"
     else
         echo -e "  ${GREEN}✓${NC} Application data: (not found)"
+    fi
+
+    # backups/
+    if [ -d "${PROJECT_DIR}/backups" ]; then
+        echo -e "  ${RED}✗${NC} Local backups: backups/ ($(du -sh "${PROJECT_DIR}/backups" 2>/dev/null | cut -f1))"
+    else
+        echo -e "  ${GREEN}✓${NC} Local backups: (not found)"
+    fi
+
+    # Python venv
+    if [ -d "${PROJECT_DIR}/backend/.venv" ]; then
+        echo -e "  ${RED}✗${NC} Python venv: backend/.venv ($(du -sh "${PROJECT_DIR}/backend/.venv" 2>/dev/null | cut -f1))"
+    else
+        echo -e "  ${GREEN}✓${NC} Python venv: (not found)"
     fi
 
     # node_modules
@@ -310,11 +406,21 @@ dry_run() {
         echo -e "  ${GREEN}✓${NC} Build output: (not found)"
     fi
 
-    # systemd
+    # systemd (system-wide + rootless user units + Quadlet)
     if [ -f "/etc/systemd/system/crucible.service" ]; then
         echo -e "  ${RED}✗${NC} systemd service: crucible.service"
     else
         echo -e "  ${GREEN}✓${NC} systemd service: (not installed)"
+    fi
+    if [ -f "${HOME}/.config/systemd/user/container-crucible-py.service" ]; then
+        echo -e "  ${RED}✗${NC} user systemd unit: container-crucible-py.service"
+    else
+        echo -e "  ${GREEN}✓${NC} user systemd unit: (not installed)"
+    fi
+    if [ -f "${HOME}/.config/containers/systemd/crucible-py.container" ]; then
+        echo -e "  ${RED}✗${NC} Quadlet unit: crucible-py.container"
+    else
+        echo -e "  ${GREEN}✓${NC} Quadlet unit: (not installed)"
     fi
 
     echo ""
@@ -338,7 +444,8 @@ run_partial() {
     show_summary
 
     echo "Source code and data are preserved."
-    echo "To redeploy later, run: ./setup-after-clone.sh"
+    echo "To redeploy later: ./setup-after-clone-py.sh (Python backend)"
+    echo "               or: ./setup-after-clone.sh    (legacy Node backend)"
     echo ""
 }
 
