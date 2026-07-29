@@ -329,6 +329,9 @@ systemctl --user start crucible-py.service
 | Container gone after logout/reboot | rootless containers die with the session | `sudo loginctl enable-linger $USER` + systemd unit (section 6) |
 | Healthcheck `unhealthy` but curl works | old image built without `--format docker` (podman OCI drops HEALTHCHECK) | rebuild with `./container-py.sh build` (flag applied automatically) |
 | Corporate proxy breaks localhost curl | proxy env vars | use `curl --noproxy '*' ...` (the scripts already do) |
+| `podman ps` shows `Up ... (starting)` | healthcheck hasn't run yet (30 s interval) | normal — flips to `(healthy)` after the first successful probe; verify with `./container-py.sh status` |
+| `Exited (0) ... (unhealthy)` after a stop | `(0)` = clean shutdown; `(unhealthy)` is just the last health probe failing while the app shut down | normal — nothing to fix |
+| `./container.sh stop` says "Container was not running" while crucible-py is up | `container.sh` manages the **Node** container (`crucible`); the Python one (`crucible-py`) belongs to `container-py.sh` | use the matching script for each stack |
 
 ---
 
