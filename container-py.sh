@@ -9,14 +9,28 @@
 #   3. docker, if installed
 #
 # All settings are env-overridable:
-#   PORT=49160          host+container HTTP port
+#   CRUCIBLE_PORT=<n>   host+container HTTP port (default 49160; a generic
+#                       PORT env var is ignored to avoid shared-VM clashes)
 #   HOST_BIND=<ip>      published-port interface (see below)
 #   PLATFORM=linux/amd64  cross-build target (e.g. building amd64 on a Mac)
 
 IMAGE_NAME="crucible-py"
 CONTAINER_NAME="crucible-py"
-PORT="${PORT:-49160}"
 DATA_DIR="$(pwd)/data"
+
+# ── Port selection ──────────────────────────────────────────────────
+# Use CRUCIBLE_PORT to override the port. A generic PORT variable from the
+# environment is deliberately IGNORED: shared dev machines often export
+# PORT for unrelated apps (observed on the RHEL8 VM, where PORT=3000 made
+# the container bind the wrong port).
+if [ -n "$CRUCIBLE_PORT" ]; then
+    PORT="$CRUCIBLE_PORT"
+else
+    if [ -n "$PORT" ] && [ "$PORT" != "49160" ]; then
+        echo "ℹ  Ignoring PORT=$PORT from the environment (use CRUCIBLE_PORT=<n> to override); using 49160."
+    fi
+    PORT=49160
+fi
 
 # Colors for output
 RED='\033[0;31m'
@@ -97,7 +111,7 @@ show_help() {
     echo ""
     echo "Environment variables:"
     echo "  CONTAINER_RUNTIME=podman|docker   force a runtime (default: auto-detect)"
-    echo "  PORT=<n>                          port (default 49160)"
+    echo "  CRUCIBLE_PORT=<n>                 port (default 49160; generic PORT is ignored)"
     echo "  HOST_BIND=<ip>                    published-port interface"
     echo "  PLATFORM=linux/amd64              cross-build target platform"
     echo ""
@@ -133,12 +147,6 @@ start_container() {
         $RUNTIME start ${CONTAINER_NAME}
     else
         echo -e "${YELLOW}Creating and starting container (runtime: ${RUNTIME}, port: ${PORT})...${NC}"
-        # Shared dev machines often export PORT in the shell profile; creating
-        # the container with an unexpected port is almost never intended.
-        if [ "${PORT}" != "49160" ]; then
-            echo -e "${YELLOW}⚠  Using PORT=${PORT} (inherited from your environment; default is 49160).${NC}"
-            echo -e "${YELLOW}   If unintended, abort and run:  PORT=49160 $0 start${NC}"
-        fi
         mkdir -p "${DATA_DIR}"
 
         # :Z relabels the volume for SELinux (required on RHEL8; harmless

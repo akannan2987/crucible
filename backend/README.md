@@ -56,7 +56,7 @@ cd client && VITE_API_PROXY_TARGET=http://localhost:8000 npm run dev
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `PORT` | `49160` | HTTP port (production entrypoint) |
+| `PORT` | `49160` | HTTP port read by the app itself (`python -m app.main`). Note: the container scripts pass this in for you and ignore a shell-inherited `PORT` — use `CRUCIBLE_PORT=<n>` with `container-py.sh` |
 | `DATABASE_URL` | `sqlite:///<repo>/data/crucible.db` | SQLAlchemy connection string. PostgreSQL later: `postgresql+psycopg://user:pass@host/db` (add `psycopg[binary]` to requirements) |
 | `CLIENT_DIST` | `<repo>/client/dist` | Built React app served as static files |
 | `LOWDB_PATH` | `<repo>/data/pandora.json` | Source file for the migration script |

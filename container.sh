@@ -5,8 +5,17 @@
 
 IMAGE_NAME="crucible"
 CONTAINER_NAME="crucible"
-# Ports are env-overridable; defaults match the Dockerfile (PORT=49160).
-PORT="${PORT:-49160}"
+# Port selection: use CRUCIBLE_PORT to override (default 49160). A generic
+# PORT variable from the environment is deliberately IGNORED — shared dev
+# machines often export PORT for unrelated apps.
+if [ -n "$CRUCIBLE_PORT" ]; then
+    PORT="$CRUCIBLE_PORT"
+else
+    if [ -n "$PORT" ] && [ "$PORT" != "49160" ]; then
+        echo "ℹ  Ignoring PORT=$PORT from the environment (use CRUCIBLE_PORT=<n> to override); using 49160."
+    fi
+    PORT=49160
+fi
 HTTPS_PORT="${HTTPS_PORT:-5943}"
 
 # Host interface for published ports (override with HOST_BIND=<ip>).

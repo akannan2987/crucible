@@ -251,12 +251,12 @@ sudo service iptables save                # persists only with iptables-services
 # nothing to do — verify with the external curl in step 6.
 
 # 4. Start (publishes 0.0.0.0:49160 on Linux automatically).
-#    PORT is stated explicitly because shared dev VMs often export PORT
-#    in the shell profile, which the scripts would otherwise honour.
-PORT=49160 ./container-py.sh start
+#    Note: a generic PORT variable in your shell (common on shared dev VMs)
+#    is ignored by the scripts; override the port with CRUCIBLE_PORT=<n>.
+./container-py.sh start
 
 # 5. Migrate the existing lowdb data (idempotent)
-PORT=49160 ./container-py.sh migrate
+./container-py.sh migrate
 
 # 6. Verify
 curl --noproxy '*' -s http://localhost:49160/api/stats    # JSON counts
@@ -321,7 +321,7 @@ systemctl --user start crucible-py.service
 |---|---|---|
 | Works on the VM, unreachable from workstation | host firewall | firewalld: `sudo firewall-cmd --permanent --add-port=49160/tcp && sudo firewall-cmd --reload` · plain iptables: `sudo iptables -I INPUT -p tcp --dport 49160 -j ACCEPT` (+ `service iptables save`) · if neither is installed and `iptables -L INPUT` is empty, the blocker is the network, not the host |
 | `sudo: firewall-cmd: command not found` | firewalld not installed on this VM | do **not** install it (would impose default-deny and could break other services); diagnose with `rpm -q firewalld iptables-services` and `sudo iptables -L INPUT -n`, then use the iptables or no-firewall path in Runbook C step 3 |
-| Container tries to bind an unexpected port (e.g. `rootlessport listen tcp 0.0.0.0:3000: address already in use`) | your shell exports `PORT` (common on shared dev VMs) and the scripts honour it | `echo $PORT` to confirm; `podman rm -f crucible-py` (the failed create kept the wrong mapping), then run with the port explicit: `PORT=49160 ./container-py.sh start`. The systemd/Quadlet unit is immune (it sets `Environment=PORT=49160`) |
+| Container tries to bind an unexpected port (e.g. `rootlessport listen tcp 0.0.0.0:3000: address already in use`) | an old script version honoured a `PORT` variable exported by the shell (common on shared dev VMs) | fixed: current scripts **ignore** a generic `PORT` (override only via `CRUCIBLE_PORT=<n>`). If it still happens: `git pull`, `podman rm -f crucible-py`, `./container-py.sh start` |
 | Container starts but `/app/data` is empty / `Permission denied` in logs | SELinux blocks the bind-mount | the scripts already mount with `:Z` (relabels for the container); if you mount manually, always append `:Z` |
 | `bind: permission denied` on a port | rootless podman cannot bind ports < 1024 | use ports ≥ 1024 (49160 is fine) or `sudo sysctl net.ipv4.ip_unprivileged_port_start=<n>` |
 | `address already in use` on 49160 | old container (old name `pandora-toolbox` or `crucible`) still mapped | `podman ps -a`, then `podman rm -f <name>` |

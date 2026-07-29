@@ -203,6 +203,26 @@ Tests cover (70 total, ~1s):
 
 Both scripts auto-detect **podman or docker** (override with
 `CONTAINER_RUNTIME=docker|podman`) and check the podman VM state on macOS.
+Port override: `CRUCIBLE_PORT=<n>` (a generic `PORT` env var is ignored to
+avoid clashes on shared machines).
+
+### Deploy on the RHEL8 VM (production) — field-tested sequence
+
+```bash
+# On the VM (full runbook with troubleshooting: MIGRATION.md §6–§7)
+cd /path/to/crucible
+./container.sh stop 2>/dev/null || true   # freeze the old Node app first
+cp -r data ~/data-backup-$(date +%Y%m%d)  # back up production data
+git pull
+./container-py.sh build
+./container-py.sh start                   # publishes 0.0.0.0:49160
+./container-py.sh migrate                 # lowdb → SQLite (idempotent)
+curl --noproxy '*' -s http://localhost:49160/api/stats
+# then: systemd auto-start (MIGRATION.md §6) and cutover checklist (§8)
+```
+
+App URL: `http://nr-ubp-dev-02.nihs.ch.nestle.com:49160`. Firewall notes
+(firewalld vs plain iptables vs none): MIGRATION.md Runbook C step 3.
 
 ### Python backend (new stack)
 

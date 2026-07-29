@@ -69,7 +69,9 @@ Notes:
 
 - Nothing is hardcoded to a hostname or platform: the server reads the
   `PORT` env var (default 49160) and binds `0.0.0.0`, so the same image runs
-  unmodified on macOS and RHEL8. The scripts accept `PORT=<n>` overrides.
+  unmodified on macOS and RHEL8. The container scripts accept
+  `CRUCIBLE_PORT=<n>` overrides (a generic `PORT` env var is ignored to
+  avoid clashes on shared machines).
 - If a cron entry runs `monitor.sh`, it now defaults to checking
   `http://localhost:49160/api/stats` — no change needed unless you deployed
   with SSL, in which case set `API_URL=https://localhost:49160/api/stats`.
