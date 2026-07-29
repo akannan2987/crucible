@@ -132,7 +132,13 @@ start_container() {
         echo -e "${YELLOW}Container already exists. Starting...${NC}"
         $RUNTIME start ${CONTAINER_NAME}
     else
-        echo -e "${YELLOW}Creating and starting container (runtime: ${RUNTIME})...${NC}"
+        echo -e "${YELLOW}Creating and starting container (runtime: ${RUNTIME}, port: ${PORT})...${NC}"
+        # Shared dev machines often export PORT in the shell profile; creating
+        # the container with an unexpected port is almost never intended.
+        if [ "${PORT}" != "49160" ]; then
+            echo -e "${YELLOW}⚠  Using PORT=${PORT} (inherited from your environment; default is 49160).${NC}"
+            echo -e "${YELLOW}   If unintended, abort and run:  PORT=49160 $0 start${NC}"
+        fi
         mkdir -p "${DATA_DIR}"
 
         # :Z relabels the volume for SELinux (required on RHEL8; harmless
