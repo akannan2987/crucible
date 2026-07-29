@@ -18,6 +18,7 @@ VM **from this document alone**.
 8. [Cutover checklist](#8-cutover-checklist)
 9. [Rollback path](#9-rollback-path)
 10. [Open items](#10-open-items)
+11. [Backup & Restore (Python backend)](#11-backup--restore-python-backend)
 
 ---
 
@@ -340,6 +341,9 @@ systemctl --user start crucible-py.service
 Run on the target machine, in order. Nothing here deletes data.
 
 ```bash
+# 0. Take a safety backup of everything first (see §11)
+cp -r data ~/data-backup-$(date +%Y%m%d)
+
 # 1. Freeze writes: stop the Node container (data/pandora.json stops changing)
 ./container.sh stop
 
@@ -388,6 +392,10 @@ Python backend afterwards live only in `data/crucible.db`; they are not lost
 changes made after cutover matter, re-run the cutover later; the migration
 script only adds/updates from `pandora.json` and never deletes SQL records.
 
+For data-level recovery (as opposed to switching backends), restore a
+database backup instead: `./container-py.sh restore backups/crucible-<stamp>.db`
+— see [§11](#11-backup--restore-python-backend).
+
 ## 10. Open items
 
 - **SSO / authentication** — still none (unchanged from the Node version).
@@ -407,3 +415,69 @@ script only adds/updates from `pandora.json` and never deletes SQL records.
   when needed.
 - **Retire the Express server** — after the soak period: delete `server/`,
   `container.sh`, `Dockerfile` (Node), and simplify `start*.sh`.
+
+---
+
+## 11. Backup & Restore (Python backend)
+
+Identical commands on macOS and the RHEL8 VM (the script handles podman vs
+docker and running vs stopped). Everything worth backing up lives in one
+place: the `data/` directory — `crucible.db` (live SQLite database) and
+`pandora.json` (frozen lowdb snapshot, the rollback dataset).
+
+### Take a backup
+
+```bash
+./container-py.sh backup
+```
+
+- **Safe while the app is running** — uses SQLite's online-backup API inside
+  the container, so you never get a torn copy (a plain `cp` of a live SQLite
+  file can catch it mid-write and produce a corrupt backup — don't do that).
+- Writes timestamped files to `backups/` (git-ignored):
+  `crucible-YYYYMMDD-HHMMSS.db` plus `pandora-YYYYMMDD-HHMMSS.json`.
+- Override the destination with `BACKUP_DIR=/path ./container-py.sh backup`.
+
+### Restore a backup
+
+```bash
+./container-py.sh restore                                  # lists available backups
+./container-py.sh restore backups/crucible-20260729-124758.db
+```
+
+The restore: stops the container → keeps the current database as
+`data/crucible.db.pre-restore` (safety net) → swaps in the backup → starts
+the container. Verify afterwards:
+
+```bash
+curl --noproxy '*' -s http://localhost:49160/api/stats   # counts as expected?
+```
+
+### Moving data between machines (e.g. Mac → VM or VM → Mac)
+
+A backup file is portable — copy it and restore on the other machine:
+
+```bash
+# on the source machine
+./container-py.sh backup
+scp backups/crucible-<stamp>.db user@other-machine:/path/to/crucible/backups/
+
+# on the target machine
+./container-py.sh restore backups/crucible-<stamp>.db
+```
+
+### Scheduled backups on the RHEL8 VM (recommended)
+
+```bash
+# Nightly at 02:00, keep the 14 most recent, log to ~/crucible-backup.log
+crontab -e
+# add (adjust the path):
+0 2 * * * cd /path/to/crucible && ./container-py.sh backup >> ~/crucible-backup.log 2>&1 && ls -t backups/crucible-*.db | tail -n +15 | xargs -r rm
+```
+
+Because `backups/` lives on the VM's own disk, also copy important backups
+off-machine periodically (e.g. `scp` to your workstation or a network share)
+— a backup on the same disk as the database does not survive a disk failure.
+
+> Legacy note: backup of the **Node** stack (pandora.json only) is covered in
+> DEPLOYMENT.md → "Backup and Restore"; it stays relevant only until cutover.

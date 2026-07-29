@@ -323,12 +323,13 @@ setup_ssl() {
 }
 
 stop_container() {
-    echo -e "${YELLOW}Stopping container...${NC}"
+    echo -e "${YELLOW}Stopping container '${CONTAINER_NAME}' (legacy Node backend)...${NC}"
     $RUNTIME stop ${CONTAINER_NAME} 2>/dev/null
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✓ Container stopped${NC}"
+        echo -e "${GREEN}✓ Container '${CONTAINER_NAME}' stopped${NC}"
     else
-        echo -e "${YELLOW}Container was not running${NC}"
+        echo -e "${YELLOW}Container '${CONTAINER_NAME}' was not running.${NC}"
+        echo -e "${YELLOW}(Note: the Python backend runs as 'crucible-py' — manage it with ./container-py.sh)${NC}"
     fi
 }
 

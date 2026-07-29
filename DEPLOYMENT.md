@@ -733,6 +733,13 @@ crontab -e
 
 ## Backup and Restore
 
+> ⚠️ **This section covers the legacy Node stack only** (`pandora.json`).
+> For the **Python backend** (`crucible.db`), use `./container-py.sh backup`
+> / `restore` — documented in
+> [MIGRATION.md §11](MIGRATION.md#11-backup--restore-python-backend).
+> Note: never plain-copy a *running* SQLite database; the script's backup
+> command exists precisely to avoid that.
+
 ### Backup Database
 
 **Container:**

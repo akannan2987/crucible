@@ -211,7 +211,10 @@ avoid clashes on shared machines).
 ```bash
 # On the VM (full runbook with troubleshooting: MIGRATION.md §6–§7)
 cd /path/to/crucible
-./container.sh stop 2>/dev/null || true   # freeze the old Node app first
+# Precaution: freeze the OLD Node app so nothing writes to pandora.json
+# during migration. If it was never deployed on this machine, this prints
+# "Container was not running" — that is expected and fine.
+./container.sh stop 2>/dev/null || true
 cp -r data ~/data-backup-$(date +%Y%m%d)  # back up production data
 git pull
 ./container-py.sh build
@@ -237,6 +240,18 @@ App URL: `http://nr-ubp-dev-02.nihs.ch.nestle.com:49160`. Firewall notes
 ./container-py.sh shell       # Shell inside the container
 ./container-py.sh clean       # Remove container and image
 ```
+
+### 💾 Backup & Restore (Python backend — same commands on Mac and RHEL8)
+
+```bash
+./container-py.sh backup       # consistent snapshot → backups/ (safe while running)
+./container-py.sh restore      # list available backups
+./container-py.sh restore backups/crucible-<stamp>.db   # stop → swap db → restart
+```
+
+Backs up `data/crucible.db` (SQLite online-backup API — never a torn copy)
+plus a `pandora.json` snapshot. Details, VM cron schedule, and
+machine-to-machine transfer: **[MIGRATION.md §11](MIGRATION.md#11-backup--restore-python-backend)**.
 
 ### Legacy Node backend
 

@@ -17,6 +17,7 @@
 IMAGE_NAME="crucible-py"
 CONTAINER_NAME="crucible-py"
 DATA_DIR="$(pwd)/data"
+BACKUP_DIR="${BACKUP_DIR:-$(pwd)/backups}"
 
 # ── Port selection ──────────────────────────────────────────────────
 # Use CRUCIBLE_PORT to override the port. A generic PORT variable from the
@@ -103,6 +104,8 @@ show_help() {
     echo "  restart     Restart the container"
     echo "  rebuild     Rebuild image and restart container"
     echo "  migrate     Run the lowdb → SQLite migration inside the container"
+    echo "  backup      Consistent database backup → backups/ (safe while running)"
+    echo "  restore <f> Restore a backup file (stops app, swaps db, restarts)"
     echo "  logs        Show container logs (follow)"
     echo "  status      Show container status + /api/stats healthcheck"
     echo "  shell       Open a shell in the container"
@@ -174,11 +177,11 @@ start_container() {
 
 stop_container() {
     check_podman_machine
-    echo -e "${YELLOW}Stopping container...${NC}"
+    echo -e "${YELLOW}Stopping container '${CONTAINER_NAME}' (Python backend)...${NC}"
     if $RUNTIME stop ${CONTAINER_NAME} 2>/dev/null; then
-        echo -e "${GREEN}✓ Container stopped${NC}"
+        echo -e "${GREEN}✓ Container '${CONTAINER_NAME}' stopped${NC}"
     else
-        echo -e "${YELLOW}Container was not running${NC}"
+        echo -e "${YELLOW}Container '${CONTAINER_NAME}' was not running${NC}"
     fi
 }
 
@@ -194,6 +197,78 @@ rebuild() {
     $RUNTIME stop ${CONTAINER_NAME} 2>/dev/null
     $RUNTIME rm ${CONTAINER_NAME} 2>/dev/null
     start_container
+}
+
+backup_data() {
+    check_podman_machine
+    mkdir -p "${BACKUP_DIR}"
+    local stamp
+    stamp=$(date +%Y%m%d-%H%M%S)
+    local dest="${BACKUP_DIR}/crucible-${stamp}.db"
+
+    if [ ! -f "${DATA_DIR}/crucible.db" ]; then
+        echo -e "${RED}✗ No database found at ${DATA_DIR}/crucible.db${NC}"
+        exit 1
+    fi
+
+    if $RUNTIME ps --format "{{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
+        # Container running: a plain `cp` could catch SQLite mid-write and
+        # produce a corrupt file. Use SQLite's online-backup API instead
+        # (runs inside the container, so no sqlite3 needed on the host).
+        echo -e "${YELLOW}Creating consistent online backup (app keeps running)...${NC}"
+        $RUNTIME exec ${CONTAINER_NAME} python -c "
+import sqlite3
+src = sqlite3.connect('/app/data/crucible.db')
+dst = sqlite3.connect('/app/data/.backup-tmp.db')
+src.backup(dst)
+dst.close(); src.close()
+"
+        mv "${DATA_DIR}/.backup-tmp.db" "${dest}"
+    else
+        # Container stopped: nothing is writing, a plain copy is safe.
+        echo -e "${YELLOW}Container not running — plain file copy is safe...${NC}"
+        cp "${DATA_DIR}/crucible.db" "${dest}"
+    fi
+
+    # Also snapshot the legacy lowdb file if present (rollback insurance).
+    if [ -f "${DATA_DIR}/pandora.json" ]; then
+        cp "${DATA_DIR}/pandora.json" "${BACKUP_DIR}/pandora-${stamp}.json"
+    fi
+
+    echo -e "${GREEN}✓ Backup complete:${NC}"
+    ls -lh "${BACKUP_DIR}" | grep "${stamp}"
+}
+
+restore_data() {
+    local src="$1"
+    if [ -z "$src" ]; then
+        echo "Usage: $0 restore <backup-file.db>"
+        echo ""
+        echo "Available backups in ${BACKUP_DIR}:"
+        ls -lh "${BACKUP_DIR}"/*.db 2>/dev/null || echo "  (none found)"
+        exit 1
+    fi
+    if [ ! -f "$src" ]; then
+        echo -e "${RED}✗ Backup file not found: $src${NC}"
+        exit 1
+    fi
+
+    check_podman_machine
+    echo -e "${YELLOW}Stopping container '${CONTAINER_NAME}' before restore...${NC}"
+    $RUNTIME stop ${CONTAINER_NAME} 2>/dev/null
+
+    # Keep the current database as a safety net — restore is destructive.
+    if [ -f "${DATA_DIR}/crucible.db" ]; then
+        mv "${DATA_DIR}/crucible.db" "${DATA_DIR}/crucible.db.pre-restore"
+        echo "  (current database kept as data/crucible.db.pre-restore)"
+    fi
+
+    cp "$src" "${DATA_DIR}/crucible.db"
+    echo -e "${GREEN}✓ Restored $(basename "$src") → data/crucible.db${NC}"
+
+    start_container
+    echo ""
+    echo "Verify with: curl --noproxy '*' -s http://localhost:${PORT}/api/stats"
 }
 
 run_migration() {
@@ -252,6 +327,8 @@ case "$1" in
     restart)  restart_container ;;
     rebuild)  rebuild ;;
     migrate)  run_migration ;;
+    backup)   backup_data ;;
+    restore)  restore_data "$2" ;;
     logs)     show_logs ;;
     status)   show_status ;;
     shell)    open_shell ;;
